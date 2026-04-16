@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://kdwahznnkwwlrwdvpaus.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtkd2Foem5ua3d3bHJ3ZHZwYXVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzMzAwOTIsImV4cCI6MjA4MDkwNjA5Mn0.DhV3w6YT7Asp8tR_ZJbDgItFYBjK3prI_Co_Ob373y8';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://kdwahznnkwwlrwdvpaus.supabase.co';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtkd2Foem5ua3d3bHJ3ZHZwYXVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzMzAwOTIsImV4cCI6MjA4MDkwNjA5Mn0.DhV3w6YT7Asp8tR_ZJbDgItFYBjK3prI_Co_Ob373y8';
 
 // Custom lock function that bypasses the Navigator LockManager
 // This prevents the "Acquiring an exclusive Navigator LockManager lock timed out" error

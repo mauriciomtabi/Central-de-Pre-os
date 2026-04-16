@@ -6,11 +6,12 @@ export const generateMarketAnalysis = async (
   material: Material | undefined,
   suppliers: Supplier[]
 ): Promise<string> => {
-  if (!process.env.API_KEY) {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_API_KEY || '';
+  if (!apiKey) {
     return "Chave de API não encontrada. Por favor configure a chave da API Gemini.";
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
   
   // Filter context data to save tokens and provide relevant info
   const relevantQuotes = material 
@@ -60,11 +61,12 @@ export const extractQuoteData = async (
   materials: Material[],
   suppliers: any[]
 ): Promise<any> => {
-  if (!process.env.API_KEY) {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_API_KEY || '';
+  if (!apiKey) {
     throw new Error("Chave de API Gemini não configurada.");
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
 
   // Prepara lista simplificada de materiais para matching
   const knownMaterials = materials.map(m => ({ id: m.id, name: m.name, category: m.category }));

@@ -6,7 +6,7 @@ export const generateMarketAnalysis = async (
   material: Material | undefined,
   suppliers: Supplier[]
 ): Promise<string> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_API_KEY || '';
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_API_KEY || 'AIzaSyCTP947eUANw0T1AsOPDnJRaa1NZJa8kfs';
   if (!apiKey) {
     return "Chave de API não encontrada. Por favor configure a chave da API Gemini.";
   }
@@ -61,7 +61,7 @@ export const extractQuoteData = async (
   materials: Material[],
   suppliers: any[]
 ): Promise<any> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_API_KEY || '';
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_API_KEY || 'AIzaSyCTP947eUANw0T1AsOPDnJRaa1NZJa8kfs';
   if (!apiKey) {
     throw new Error("Chave de API Gemini não configurada.");
   }

@@ -268,37 +268,14 @@ export const Team: React.FC<TeamProps> = ({ isTutorialMode = false, mockMembers 
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Sessão inválida. Por favor, faça login novamente.");
 
-        const { data: existing } = await supabase
-            .from('companies')
-            .select('id')
-            .ilike('name', companyName.trim())
-            .limit(1);
+        // Use SECURITY DEFINER RPC to bypass RLS (user has no company_id yet)
+        const { error: rpcCreateError } = await supabase.rpc('create_company_and_join', {
+            company_name: companyName.trim(),
+            user_name: profile?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
+            user_email: user.email || ''
+        });
 
-        if (existing && existing.length > 0) {
-             setToast({ message: "Já existe uma empresa com este nome.", type: 'error' });
-             setIsSubmitting(false);
-             return;
-        }
-
-        const { data: company, error: companyError } = await supabase
-            .from('companies')
-            .insert({ name: companyName.trim() })
-            .select()
-            .single();
-
-        if (companyError) throw companyError;
-
-        const { error: profileError } = await supabase
-            .from('profiles')
-            .upsert({ 
-                id: user.id,
-                company_id: company.id, 
-                role: 'admin',
-                email: user.email,
-                name: profile?.name || user.user_metadata?.full_name || user.email?.split('@')[0]
-            }, { onConflict: 'id' });
-
-        if (profileError) throw profileError;
+        if (rpcCreateError) throw rpcCreateError;
 
         await refreshProfile();
         setToast({ message: "Empresa criada com sucesso!", type: 'success' });
@@ -348,32 +325,18 @@ export const Team: React.FC<TeamProps> = ({ isTutorialMode = false, mockMembers 
         if (!user) throw new Error("Sessão inválida.");
 
         const idToJoin = companyIdInput.trim();
-        const { data: company, error: fetchError } = await supabase
-            .from('companies')
-            .select('id, name')
-            .eq('id', idToJoin)
-            .single();
 
-        if (fetchError || !company) {
-            setToast({ message: "Empresa não encontrada. Verifique o ID.", type: 'error' });
-            setIsSubmitting(false);
-            return;
-        }
+        // Use SECURITY DEFINER RPC to bypass RLS (user has no company_id yet)
+        const { data: joinedCompanyName, error: rpcJoinError } = await supabase.rpc('join_company_by_id', {
+            target_company_id: idToJoin,
+            user_name: profile?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
+            user_email: user.email || ''
+        });
 
-        const { error: profileError } = await supabase
-            .from('profiles')
-            .upsert({ 
-                id: user.id,
-                company_id: company.id, 
-                role: 'member',
-                email: user.email,
-                name: profile?.name || user.user_metadata?.full_name || user.email?.split('@')[0]
-            }, { onConflict: 'id' });
-
-        if (profileError) throw profileError;
+        if (rpcJoinError) throw rpcJoinError;
 
         await refreshProfile();
-        setToast({ message: `Você entrou na empresa ${company.name}!`, type: 'success' });
+        setToast({ message: `Você entrou na empresa ${joinedCompanyName}!`, type: 'success' });
         setOnboardingMode(null);
 
     } catch (error: any) {

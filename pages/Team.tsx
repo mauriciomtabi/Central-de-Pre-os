@@ -277,9 +277,11 @@ export const Team: React.FC<TeamProps> = ({ isTutorialMode = false, mockMembers 
 
         if (rpcCreateError) throw rpcCreateError;
 
+        localStorage.removeItem('cached_company_id');
         await refreshProfile();
         setToast({ message: "Empresa criada com sucesso!", type: 'success' });
         setOnboardingMode(null);
+        setTimeout(() => window.location.reload(), 1000);
 
     } catch (error: any) {
         console.error("Create company error:", JSON.stringify(error, null, 2));
@@ -335,8 +337,10 @@ export const Team: React.FC<TeamProps> = ({ isTutorialMode = false, mockMembers 
 
         if (rpcJoinError) throw rpcJoinError;
 
+        localStorage.removeItem('cached_company_id');
         await refreshProfile();
         setToast({ message: `Você entrou na empresa ${joinedCompanyName}!`, type: 'success' });
+        setTimeout(() => window.location.reload(), 1000);
         setOnboardingMode(null);
 
     } catch (error: any) {

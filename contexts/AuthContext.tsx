@@ -291,6 +291,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshProfile = async () => {
+    // Clear cache so fetchProfile always reads fresh data from DB
+    localStorage.removeItem('cached_company_id');
     const { data } = await supabase.auth.getSession();
     const currentSession = data.session;
     

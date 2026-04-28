@@ -765,7 +765,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
         if (!tableRef.current) return;
         
         try {
-            showToast('Gerando imagem...', 'info');
+            showToast('Gerando imagem...', 'success');
             const canvas = await html2canvas(tableRef.current, {
                 backgroundColor: document.documentElement.classList.contains('dark') ? '#1e293b' : '#ffffff',
                 scale: 2, // Better quality

@@ -50,6 +50,13 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
+
+  // Optimistic UI State for Instant Feedback
+  const [optimisticSuppliers, setOptimisticSuppliers] = useState<Supplier[]>(suppliers);
+  const [optimisticMaterials, setOptimisticMaterials] = useState<Material[]>(materials);
+
+  React.useEffect(() => { setOptimisticSuppliers(suppliers); }, [suppliers]);
+  React.useEffect(() => { setOptimisticMaterials(materials); }, [materials]);
   
   // Confirmation Modal State
   const [confirmationState, setConfirmationState] = useState<{
@@ -68,6 +75,8 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editedCategoryName, setEditedCategoryName] = useState('');
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const [newCategoryInput, setNewCategoryInput] = useState('');
 
   // Filters State
   const [materialSearch, setMaterialSearch] = useState('');
@@ -82,20 +91,22 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
 
   // ... (Computed Values: uniqueCategories, filteredMaterials, filteredSuppliers - same as original)
   const uniqueCategories = useMemo(() => {
-    return Array.from(new Set(materials.map(m => m.category).filter(Boolean))).sort();
-  }, [materials]);
+    const baseCats = optimisticMaterials.map(m => m.category).filter(Boolean);
+    const allCategories = [...baseCats, ...customCategories];
+    return Array.from(new Set(allCategories)).sort();
+  }, [optimisticMaterials, customCategories]);
 
   const filteredMaterials = useMemo(() => {
-    return materials.filter(m => {
+    return optimisticMaterials.filter(m => {
         const matchesSearch = m.name.toLowerCase().includes(materialSearch.toLowerCase());
         const matchesCategory = categoryFilter === 'ALL' || m.category === categoryFilter;
         return matchesSearch && matchesCategory;
     });
-  }, [materials, materialSearch, categoryFilter]);
+  }, [optimisticMaterials, materialSearch, categoryFilter]);
 
   const filteredSuppliers = useMemo(() => {
-     return suppliers.filter(s => s.name.toLowerCase().includes(materialSearch.toLowerCase()));
-  }, [suppliers, materialSearch]);
+     return optimisticSuppliers.filter(s => s.name.toLowerCase().includes(materialSearch.toLowerCase()));
+  }, [optimisticSuppliers, materialSearch]);
 
   const resetForms = () => {
     setSupForm({ name: '', email: '', rating: 5, salesperson: '', salespersonPhone: '', notes: '' });
@@ -153,26 +164,35 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
   const handleConfirmAction = async () => {
       if (!confirmationState.id) return;
       
+      const targetId = confirmationState.id;
+      const type = confirmationState.type;
+      
       try {
-          if (confirmationState.type === 'DELETE_SUPPLIER') {
-              await StorageService.deleteSupplier(confirmationState.id);
-              await refreshData();
+          if (type === 'DELETE_SUPPLIER') {
+              setOptimisticSuppliers(prev => prev.filter(s => s.id !== targetId));
+              StorageService.deleteSupplier(targetId)
+                  .then(() => refreshData())
+                  .catch(() => { showToast('Erro ao excluir fornecedor.', 'error'); refreshData(); });
               resetForms();
               showToast('Fornecedor excluído com sucesso!', 'success');
-          } else if (confirmationState.type === 'DELETE_MATERIAL') {
-              await StorageService.deleteMaterial(confirmationState.id);
-              await refreshData();
+          } else if (type === 'DELETE_MATERIAL') {
+              setOptimisticMaterials(prev => prev.filter(m => m.id !== targetId));
+              StorageService.deleteMaterial(targetId)
+                  .then(() => refreshData())
+                  .catch(() => { showToast('Erro ao excluir material.', 'error'); refreshData(); });
               resetForms();
               showToast('Material excluído com sucesso!', 'success');
-          } else if (confirmationState.type === 'DELETE_CATEGORY') {
-              await StorageService.deleteCategory(confirmationState.id);
-              await refreshData();
+          } else if (type === 'DELETE_CATEGORY') {
+              setOptimisticMaterials(prev => prev.map(m => m.category === targetId ? { ...m, category: 'Geral' } : m));
+              StorageService.deleteCategory(targetId)
+                  .then(() => refreshData())
+                  .catch(() => { showToast('Erro ao excluir categoria.', 'error'); refreshData(); });
               showToast('Categoria excluída com sucesso!', 'success');
               
-              if (matForm.category === confirmationState.id) {
+              if (matForm.category === targetId) {
                   setMatForm(prev => ({ ...prev, category: '' }));
               }
-              if (categoryFilter === confirmationState.id) {
+              if (categoryFilter === targetId) {
                   setCategoryFilter('ALL');
               }
           }
@@ -211,7 +231,6 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
   // ... (handleSaveSupplier, handleSaveMaterial, handleSaveUnit - same as original)
   const handleSaveSupplier = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
     try {
         if (editingId) {
@@ -224,8 +243,11 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
              salespersonPhone: supForm.salespersonPhone,
              notes: supForm.notes
            };
-           await StorageService.updateSupplier(updatedSup);
+           setOptimisticSuppliers(prev => prev.map(s => s.id === editingId ? updatedSup : s));
            showToast('Fornecedor atualizado com sucesso!', 'success');
+           StorageService.updateSupplier(updatedSup)
+              .then(() => refreshData())
+              .catch(() => { showToast('Erro ao atualizar fornecedor no banco.', 'error'); refreshData(); });
         } else {
            const newSup: Supplier = {
              id: generateUUID(),
@@ -236,24 +258,23 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
              salespersonPhone: supForm.salespersonPhone,
              notes: supForm.notes
            };
-           await StorageService.addSupplier(newSup);
+           setOptimisticSuppliers(prev => [...prev, newSup]);
            showToast('Fornecedor cadastrado com sucesso!', 'success');
+           StorageService.addSupplier(newSup)
+              .then(() => refreshData())
+              .catch(() => { showToast('Erro ao cadastrar fornecedor no banco.', 'error'); refreshData(); });
         }
         
-        await refreshData();
         resetForms();
         setMaterialSearch('');
     } catch (error) {
         console.error(error);
-        showToast('Erro ao salvar fornecedor.', 'error');
-    } finally {
-        setIsLoading(false);
+        showToast('Erro ao preparar fornecedor.', 'error');
     }
   };
 
   const handleSaveMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
     try {
         if (editingId) {
@@ -264,8 +285,11 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
                 baseUnitId: matForm.baseUnitId,
                 ipi: matForm.ipi
             };
-            await StorageService.updateMaterial(updatedMat);
+            setOptimisticMaterials(prev => prev.map(m => m.id === editingId ? updatedMat : m));
             showToast('Material atualizado com sucesso!', 'success');
+            StorageService.updateMaterial(updatedMat)
+                .then(() => refreshData())
+                .catch(() => { showToast('Erro ao atualizar material no banco.', 'error'); refreshData(); });
         } else {
             const newMat: Material = {
                 id: generateUUID(),
@@ -274,19 +298,19 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
                 baseUnitId: matForm.baseUnitId,
                 ipi: matForm.ipi
             };
-            await StorageService.addMaterial(newMat);
+            setOptimisticMaterials(prev => [...prev, newMat]);
             showToast('Material cadastrado com sucesso!', 'success');
+            StorageService.addMaterial(newMat)
+                .then(() => refreshData())
+                .catch(() => { showToast('Erro ao cadastrar material no banco.', 'error'); refreshData(); });
         }
 
-        await refreshData();
         resetForms();
         setMaterialSearch('');
         setCategoryFilter('ALL');
     } catch (error) {
         console.error(error);
-        showToast('Erro ao salvar material.', 'error');
-    } finally {
-        setIsLoading(false);
+        showToast('Erro ao preparar material.', 'error');
     }
   };
 
@@ -299,40 +323,54 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
             symbol: newUnit.symbol, 
             conversionFactor: newUnit.conversionFactor 
         };
-        await StorageService.addUnit(u);
-        await refreshData();
+        StorageService.addUnit(u)
+            .then(() => refreshData())
+            .catch(() => { showToast('Erro ao adicionar unidade no banco.', 'error'); refreshData(); });
+            
         setNewUnit({ name: '', symbol: '', conversionFactor: 1 });
         setShowUnitModal(false);
         setMatForm(prev => ({ ...prev, baseUnitId: u.id }));
         showToast('Unidade de medida adicionada!', 'success');
     } catch (error) {
-        showToast('Erro ao adicionar unidade.', 'error');
+        showToast('Erro ao preparar unidade.', 'error');
+    }
+  };
+
+  const handleAddCustomCategory = () => {
+    const trimmed = newCategoryInput.trim();
+    if (trimmed && !uniqueCategories.includes(trimmed)) {
+        setCustomCategories(prev => [...prev, trimmed]);
+        setNewCategoryInput('');
+        showToast('Categoria adicionada!', 'success');
     }
   };
 
   const handleUpdateCategory = async (oldCategory: string) => {
-    if (!editedCategoryName.trim() || editedCategoryName === oldCategory) {
+    const trimmedNewCat = editedCategoryName.trim();
+    if (!trimmedNewCat || trimmedNewCat === oldCategory) {
         setEditingCategory(null);
         return;
     }
-    setIsLoading(true);
+    
     try {
-        await StorageService.updateCategory(oldCategory, editedCategoryName.trim());
-        await refreshData();
+        setOptimisticMaterials(prev => prev.map(m => m.category === oldCategory ? { ...m, category: trimmedNewCat } : m));
+        
+        StorageService.updateCategory(oldCategory, trimmedNewCat)
+            .then(() => refreshData())
+            .catch(() => { showToast('Erro ao atualizar categoria no banco.', 'error'); refreshData(); });
+            
         setEditingCategory(null);
         showToast('Categoria atualizada com sucesso!', 'success');
         
         // Update form if it was using the old category
         if (matForm.category === oldCategory) {
-            setMatForm(prev => ({ ...prev, category: editedCategoryName.trim() }));
+            setMatForm(prev => ({ ...prev, category: trimmedNewCat }));
         }
         if (categoryFilter === oldCategory) {
-            setCategoryFilter(editedCategoryName.trim());
+            setCategoryFilter(trimmedNewCat);
         }
     } catch (error) {
-        showToast('Erro ao atualizar categoria.', 'error');
-    } finally {
-        setIsLoading(false);
+        showToast('Erro ao preparar atualização de categoria.', 'error');
     }
   };
 

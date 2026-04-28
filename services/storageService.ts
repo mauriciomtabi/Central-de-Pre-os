@@ -419,7 +419,7 @@ export const StorageService = {
           id: material.id,
           name: material.name,
           category: material.category,
-          base_unit_id: material.baseUnitId,
+          base_unit_id: material.baseUnitId || null,
           ipi: material.ipi,
           company_id: companyId
         }, { onConflict: 'id' })
@@ -435,7 +435,7 @@ export const StorageService = {
         supabase.from('materials').update({
           name: material.name,
           category: material.category,
-          base_unit_id: material.baseUnitId,
+          base_unit_id: material.baseUnitId || null,
           ipi: material.ipi
         }).eq('id', material.id).eq('company_id', companyId)
     );

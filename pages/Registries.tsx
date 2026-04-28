@@ -90,7 +90,16 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
   const [supForm, setSupForm] = useState({ name: '', email: '', rating: 5, salesperson: '', salespersonPhone: '', notes: '' });
   
   // Material Form
-  const [matForm, setMatForm] = useState({ name: '', category: '', baseUnitId: 'u1', ipi: 0 });
+  const [matForm, setMatForm] = useState({ name: '', category: '', baseUnitId: '', ipi: 0 });
+  // Initialize baseUnitId to first available unit when units load
+  React.useEffect(() => {
+    setMatForm(prev => {
+      if (!prev.baseUnitId && units && units.length > 0) {
+        return { ...prev, baseUnitId: units[0].id };
+      }
+      return prev;
+    });
+  }, [units]);
   const [isCustomCategory, setIsCustomCategory] = useState(false);
 
   // ... (Computed Values: uniqueCategories, filteredMaterials, filteredSuppliers - same as original)
@@ -114,7 +123,8 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
 
   const resetForms = () => {
     setSupForm({ name: '', email: '', rating: 5, salesperson: '', salespersonPhone: '', notes: '' });
-    setMatForm({ name: '', category: '', baseUnitId: 'u1', ipi: 0 });
+    const firstUnitId = units && units.length > 0 ? units[0].id : '';
+    setMatForm({ name: '', category: '', baseUnitId: firstUnitId, ipi: 0 });
     setEditingId(null);
     setIsCustomCategory(false);
   };
@@ -266,7 +276,12 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
            showToast('Fornecedor cadastrado com sucesso!', 'success');
            StorageService.addSupplier(newSup)
               .then(() => refreshData())
-              .catch(() => { showToast('Erro ao cadastrar fornecedor no banco.', 'error'); refreshData(); });
+              .catch((err) => {
+                  console.error('[addSupplier] DB error:', err);
+                  setOptimisticSuppliers(prev => prev.filter(s => s.id !== newSup.id));
+                  showToast('Erro ao salvar fornecedor no banco.', 'error');
+                  refreshData();
+              });
         }
         
         resetForms();
@@ -299,14 +314,20 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
                 id: generateUUID(),
                 name: matForm.name,
                 category: matForm.category,
-                baseUnitId: matForm.baseUnitId,
+                baseUnitId: matForm.baseUnitId || (units.length > 0 ? units[0].id : ''),
                 ipi: matForm.ipi
             };
             setOptimisticMaterials(prev => [...prev, newMat]);
             showToast('Material cadastrado com sucesso!', 'success');
             StorageService.addMaterial(newMat)
                 .then(() => refreshData())
-                .catch(() => { showToast('Erro ao cadastrar material no banco.', 'error'); refreshData(); });
+                .catch((err) => {
+                    console.error('[addMaterial] DB error:', err);
+                    // Rollback: remove the optimistic item
+                    setOptimisticMaterials(prev => prev.filter(m => m.id !== newMat.id));
+                    showToast('Erro ao salvar material no banco. Verifique se a unidade está configurada corretamente.', 'error');
+                    refreshData();
+                });
         }
 
         resetForms();

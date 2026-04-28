@@ -768,6 +768,24 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
               </button>
             </div>
             <div className="p-4 max-h-[60vh] overflow-y-auto">
+              <div className="flex gap-2 mb-4">
+                  <input 
+                      type="text" 
+                      placeholder="Nova categoria..."
+                      value={newCategoryInput}
+                      onChange={(e) => setNewCategoryInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddCustomCategory()}
+                      className="flex-1 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-400 dark:placeholder-slate-500"
+                  />
+                  <button 
+                      onClick={handleAddCustomCategory}
+                      disabled={!newCategoryInput.trim()}
+                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:text-slate-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                  >
+                      <Plus size={16} /> Adicionar
+                  </button>
+              </div>
+              
               {uniqueCategories.length === 0 ? (
                   <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Nenhuma categoria cadastrada.</p>
               ) : (

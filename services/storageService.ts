@@ -157,6 +157,7 @@ let memoryCache = {
     units: null as Unit[] | null,
     simulations: null as SimulationScenario[] | null,
     team: null as any[] | null,
+    categories: null as string[] | null,
 };
 
 export const clearStorageCache = () => {
@@ -166,7 +167,8 @@ export const clearStorageCache = () => {
         materials: null,
         units: null,
         simulations: null,
-        team: null
+        team: null,
+        categories: null,
     };
 };
 
@@ -363,7 +365,7 @@ export const StorageService = {
   addSupplier: async (supplier: Supplier) => {
     const { companyId } = await getContext();
     const { error } = await withTimeout(
-        supabase.from('suppliers').insert({
+        supabase.from('suppliers').upsert({
           id: supplier.id,
           name: supplier.name,
           rating: supplier.rating,
@@ -372,7 +374,7 @@ export const StorageService = {
           salesperson_phone: supplier.salespersonPhone,
           notes: supplier.notes,
           company_id: companyId
-        })
+        }, { onConflict: 'id' })
     );
     
     if (error) throw new Error(error.message);
@@ -413,14 +415,14 @@ export const StorageService = {
   addMaterial: async (material: Material) => {
     const { companyId } = await getContext();
     const { error } = await withTimeout(
-        supabase.from('materials').insert({
+        supabase.from('materials').upsert({
           id: material.id,
           name: material.name,
           category: material.category,
           base_unit_id: material.baseUnitId,
           ipi: material.ipi,
           company_id: companyId
-        })
+        }, { onConflict: 'id' })
     );
 
     if (error) throw new Error(error.message);
@@ -444,26 +446,69 @@ export const StorageService = {
 
   updateCategory: async (oldCategory: string, newCategory: string) => {
     const { companyId } = await getContext();
-    const { error } = await withTimeout(
+    const { error: matError } = await withTimeout(
         supabase.from('materials').update({
           category: newCategory
         }).eq('category', oldCategory).eq('company_id', companyId)
     );
+    if (matError) throw new Error(matError.message);
 
-    if (error) throw new Error(error.message);
+    await withTimeout(
+        supabase.from('categories').update({ name: newCategory })
+            .eq('name', oldCategory).eq('company_id', companyId)
+    );
+
     memoryCache.materials = null;
+    memoryCache.categories = null;
   },
 
   deleteCategory: async (category: string) => {
     const { companyId } = await getContext();
-    const { error } = await withTimeout(
+    const { error: matError } = await withTimeout(
         supabase.from('materials').update({
           category: 'Geral'
         }).eq('category', category).eq('company_id', companyId)
     );
+    if (matError) throw new Error(matError.message);
 
-    if (error) throw new Error(error.message);
+    await withTimeout(
+        supabase.from('categories').delete()
+            .eq('name', category).eq('company_id', companyId)
+    );
+
     memoryCache.materials = null;
+    memoryCache.categories = null;
+  },
+
+  getCategories: async (forceRefresh = false): Promise<string[]> => {
+    if (!forceRefresh && memoryCache.categories) return memoryCache.categories;
+    try {
+      const { companyId } = await getContext();
+      const { data, error } = await supabase
+          .from('categories')
+          .select('name')
+          .eq('company_id', companyId)
+          .order('name', { ascending: true });
+      if (error) throw error;
+      const cats = (data || []).map((r: any) => r.name as string);
+      memoryCache.categories = cats;
+      return cats;
+    } catch (e: any) {
+      if (e.message === ERROR_NO_COMPANY) return [];
+      return memoryCache.categories || [];
+    }
+  },
+
+  addCategory: async (categoryName: string) => {
+    const { companyId } = await getContext();
+    const { error } = await withTimeout(
+        supabase.from('categories').upsert({
+          name: categoryName,
+          company_id: companyId
+        }, { onConflict: 'name,company_id' })
+    );
+    if (error) throw new Error(error.message);
+    memoryCache.categories = null;
   },
 
   deleteMaterial: async (id: string) => {

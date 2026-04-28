@@ -57,6 +57,10 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
 
   React.useEffect(() => { setOptimisticSuppliers(suppliers); }, [suppliers]);
   React.useEffect(() => { setOptimisticMaterials(materials); }, [materials]);
+  const [dbCategories, setDbCategories] = React.useState<string[]>([]);
+  React.useEffect(() => {
+    StorageService.getCategories().then(cats => setDbCategories(cats)).catch(() => {});
+  }, []);
   
   // Confirmation Modal State
   const [confirmationState, setConfirmationState] = useState<{
@@ -92,9 +96,9 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
   // ... (Computed Values: uniqueCategories, filteredMaterials, filteredSuppliers - same as original)
   const uniqueCategories = useMemo(() => {
     const baseCats = optimisticMaterials.map(m => m.category).filter(Boolean);
-    const allCategories = [...baseCats, ...customCategories];
+    const allCategories = [...baseCats, ...customCategories, ...dbCategories];
     return Array.from(new Set(allCategories)).sort();
-  }, [optimisticMaterials, customCategories]);
+  }, [optimisticMaterials, customCategories, dbCategories]);
 
   const filteredMaterials = useMemo(() => {
     return optimisticMaterials.filter(m => {
@@ -338,11 +342,23 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
 
   const handleAddCustomCategory = () => {
     const trimmed = newCategoryInput.trim();
-    if (trimmed && !uniqueCategories.includes(trimmed)) {
-        setCustomCategories(prev => [...prev, trimmed]);
-        setNewCategoryInput('');
-        showToast('Categoria adicionada!', 'success');
+    if (!trimmed || uniqueCategories.includes(trimmed)) {
+        if (uniqueCategories.includes(trimmed)) showToast('Categoria já existe!', 'error');
+        return;
     }
+    // Optimistic UI update
+    setCustomCategories(prev => [...prev, trimmed]);
+    setDbCategories(prev => [...prev, trimmed]);
+    setNewCategoryInput('');
+    showToast('Categoria adicionada!', 'success');
+    // Persist to DB
+    StorageService.addCategory(trimmed)
+        .catch(() => {
+            // Rollback on failure
+            setCustomCategories(prev => prev.filter(c => c !== trimmed));
+            setDbCategories(prev => prev.filter(c => c !== trimmed));
+            showToast('Erro ao salvar categoria no banco. Tente novamente.', 'error');
+        });
   };
 
   const handleUpdateCategory = async (oldCategory: string) => {

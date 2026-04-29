@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+﻿import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Quote, Supplier, Material, Unit, QuoteStatus, FreightType } from '../types';
 import { StorageService } from '../services/storageService';
 import { extractQuoteData } from '../services/geminiService';
@@ -78,8 +78,8 @@ const AttachmentModal = ({ fileName, onClose, isTutorialMode }: { fileName: stri
                     ) : (
                         <div className="text-center text-slate-500 dark:text-slate-400">
                             <FileText size={48} className="mx-auto mb-2 opacity-50" />
-                            <p>Visualização não disponível para este arquivo simulado.</p>
-                            <p className="text-xs mt-1">(Apenas arquivos reais carregados agora são exibidos)</p>
+                            <p>VisualizaÃ§Ã£o nÃ£o disponÃ­vel para este arquivo simulado.</p>
+                            <p className="text-xs mt-1">(Apenas arquivos reais carregados agora sÃ£o exibidos)</p>
                         </div>
                     )}
                 </div>
@@ -251,6 +251,11 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
     const [newMat, setNewMat] = useState({ name: '', category: '', baseUnitId: 'u1', ipi: 0 });
     const [isCustomCategory, setIsCustomCategory] = useState(false);
     const [newUnit, setNewUnit] = useState({ name: '', symbol: '', conversionFactor: 1 });
+    const [dbCategories, setDbCategories] = useState<string[]>([]);
+
+    useEffect(() => {
+        StorageService.getCategories().then(cats => setDbCategories(cats)).catch(() => {});
+    }, []);
     const [headerData, setHeaderData] = useState({
         supplierId: '',
         date: new Date().toISOString().split('T')[0],
@@ -303,7 +308,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
         return () => clearInterval(interval);
     }, [isProcessingDoc]);
 
-    const categories = Array.from(new Set(materials.map(m => m.category))).sort();
+    const categories = Array.from(new Set([...materials.map(m => m.category).filter(Boolean), ...dbCategories])).sort();
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
@@ -458,7 +463,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
         if (e.target.files && e.target.files[0]) {
         const file = e.target.files[0];
         if (file.size > 2 * 1024 * 1024) {
-            showToast('Arquivo muito grande. Limite de 2MB para esta demonstração.', 'error');
+            showToast('Arquivo muito grande. Limite de 2MB para esta demonstraÃ§Ã£o.', 'error');
             e.target.value = '';
             return;
         }
@@ -522,9 +527,9 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                             });
                             
                             setQuoteItems(newItems);
-                            showToast(`${newItems.length} itens extraídos com sucesso! Verifique os dados.`, 'success');
+                            showToast(`${newItems.length} itens extraÃ­dos com sucesso! Verifique os dados.`, 'success');
                         } else {
-                            showToast("A IA não conseguiu identificar itens claros na cotação.", "error");
+                            showToast("A IA nÃ£o conseguiu identificar itens claros na cotaÃ§Ã£o.", "error");
                         }
 
                     } catch (error) {
@@ -552,8 +557,8 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
             isOpen: true,
             type: 'DELETE_QUOTE',
             id,
-            title: 'Excluir Cotação',
-            message: 'Tem certeza que deseja excluir esta cotação permanentemente? Esta ação não pode ser desfeita.'
+            title: 'Excluir CotaÃ§Ã£o',
+            message: 'Tem certeza que deseja excluir esta cotaÃ§Ã£o permanentemente? Esta aÃ§Ã£o nÃ£o pode ser desfeita.'
         });
     };
 
@@ -563,7 +568,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
             type: 'DELETE_UNIT',
             id,
             title: 'Excluir Unidade',
-            message: 'Tem certeza que deseja remover esta unidade? Certifique-se que ela não está sendo usada em cotações ou materiais.'
+            message: 'Tem certeza que deseja remover esta unidade? Certifique-se que ela nÃ£o estÃ¡ sendo usada em cotaÃ§Ãµes ou materiais.'
         });
     };
 
@@ -574,14 +579,14 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
             if (confirmationState.type === 'DELETE_QUOTE') {
                 await StorageService.deleteQuote(confirmationState.id);
                 refreshData();
-                showToast('Cotação excluída com sucesso!', 'success');
+                showToast('CotaÃ§Ã£o excluÃ­da com sucesso!', 'success');
             } else if (confirmationState.type === 'DELETE_UNIT') {
                 await StorageService.removeUnit(confirmationState.id);
                 refreshData();
                 showToast('Unidade removida!', 'success');
             }
         } catch (error) {
-            showToast('Erro ao realizar a ação. Verifique dependências.', 'error');
+            showToast('Erro ao realizar a aÃ§Ã£o. Verifique dependÃªncias.', 'error');
         } finally {
             setConfirmationState({ ...confirmationState, isOpen: false });
         }
@@ -603,7 +608,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
         e.preventDefault();
         const hasUnmatched = quoteItems.some(i => i.isUnmatched);
         if (hasUnmatched) {
-            showToast('Existem itens não cadastrados (em vermelho). Cadastre-os ou selecione um material existente.', 'error');
+            showToast('Existem itens nÃ£o cadastrados (em vermelho). Cadastre-os ou selecione um material existente.', 'error');
             return;
         }
 
@@ -649,7 +654,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
             });
 
             await Promise.all(promises);
-            showToast(editingQuoteId ? 'Cotação atualizada!' : `${quoteItems.length} cotação(ões) registrada(s)!`, 'success');
+            showToast(editingQuoteId ? 'CotaÃ§Ã£o atualizada!' : `${quoteItems.length} cotaÃ§Ã£o(Ãµes) registrada(s)!`, 'success');
             await refreshData();
             setCurrentPage(1);
             setShowForm(false);
@@ -783,7 +788,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                 if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                     try {
                         await navigator.share({
-                            title: 'Resumo de Cotações',
+                            title: 'Resumo de CotaÃ§Ãµes',
                             files: [file]
                         });
                         showToast('Resumo compartilhado com sucesso!', 'success');
@@ -837,7 +842,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
             });
 
         if (validQuotes.length === 0) {
-            showToast('Nenhuma cotação encontrada para o período/materiais selecionados.', 'error');
+            showToast('Nenhuma cotaÃ§Ã£o encontrada para o perÃ­odo/materiais selecionados.', 'error');
             return;
         }
 
@@ -856,11 +861,11 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
 
         let htmlBody = `
             <div style="font-family: Arial, sans-serif; color: #333;">
-                <h2 style="color: #1e293b; margin-bottom: 16px;">Resumo de Cotações</h2>
+                <h2 style="color: #1e293b; margin-bottom: 16px;">Resumo de CotaÃ§Ãµes</h2>
         `;
         
         if (summaryStartDate || summaryEndDate) {
-            htmlBody += `<p style="margin-bottom: 16px;"><strong>Período:</strong> ${summaryStartDate ? new Date(summaryStartDate).toLocaleDateString('pt-BR') : 'Início'} até ${summaryEndDate ? new Date(summaryEndDate).toLocaleDateString('pt-BR') : 'Hoje'}</p>`;
+            htmlBody += `<p style="margin-bottom: 16px;"><strong>PerÃ­odo:</strong> ${summaryStartDate ? new Date(summaryStartDate).toLocaleDateString('pt-BR') : 'InÃ­cio'} atÃ© ${summaryEndDate ? new Date(summaryEndDate).toLocaleDateString('pt-BR') : 'Hoje'}</p>`;
         }
 
         categories.forEach(category => {
@@ -940,7 +945,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
         });
 
         htmlBody += `
-            <p style="font-size: 12px; color: #64748b;">Gerado via Central de Preços</p>
+            <p style="font-size: 12px; color: #64748b;">Gerado via Central de PreÃ§os</p>
         </div>
         `;
 
@@ -951,8 +956,8 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
             
             await navigator.clipboard.write(data);
             
-            const subject = encodeURIComponent('Resumo de Cotações');
-            const body = encodeURIComponent('Cole a tabela aqui (Ctrl+V ou botão direito -> Colar):');
+            const subject = encodeURIComponent('Resumo de CotaÃ§Ãµes');
+            const body = encodeURIComponent('Cole a tabela aqui (Ctrl+V ou botÃ£o direito -> Colar):');
             const mailtoLink = `mailto:mauricio.maciel@globalaco.com.br?subject=${subject}&body=${body}`;
             
             window.open(mailtoLink, '_top');
@@ -977,7 +982,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
         return statusMatch && searchMatch && startMatch && endMatch && categoryMatch;
     });
 
-    const statusLabels: Record<string, string> = { [QuoteStatus.OPEN]: 'ABERTA', [QuoteStatus.ANALYZING]: 'EM ANÁLISE', [QuoteStatus.APPROVED]: 'APROVADA', [QuoteStatus.REJECTED]: 'REJEITADA' };
+    const statusLabels: Record<string, string> = { [QuoteStatus.OPEN]: 'ABERTA', [QuoteStatus.ANALYZING]: 'EM ANÃLISE', [QuoteStatus.APPROVED]: 'APROVADA', [QuoteStatus.REJECTED]: 'REJEITADA' };
     const totalPages = Math.ceil(filteredQuotes.length / ITEMS_PER_PAGE);
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
@@ -1021,13 +1026,13 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                     onClick={() => setActiveTab('list')}
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'list' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
                 >
-                    Todas as Cotações
+                    Todas as CotaÃ§Ãµes
                 </button>
                 <button
                     onClick={() => setActiveTab('summary')}
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'summary' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
                 >
-                    Resumo Cotações
+                    Resumo CotaÃ§Ãµes
                 </button>
             </div>
             
@@ -1072,7 +1077,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                             <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`${headerInputClass} uppercase text-xs`} placeholder="De:" />
                     </div>
                     <div className="relative w-full sm:w-40">
-                            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`${headerInputClass} uppercase text-xs`} placeholder="Até:" />
+                            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`${headerInputClass} uppercase text-xs`} placeholder="AtÃ©:" />
                     </div>
                     {(startDate || endDate) && (
                             <button onClick={() => { setStartDate(''); setEndDate(''); }} className="h-10 w-10 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700">
@@ -1118,7 +1123,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                     className="h-10 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 rounded-lg text-sm font-semibold shadow-sm shadow-blue-600/20 transition-all active:scale-95 whitespace-nowrap"
                 >
                     <Plus size={18} />
-                    Nova Cotação
+                    Nova CotaÃ§Ã£o
                 </button>
                 </div>
             </div>
@@ -1126,7 +1131,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
             {showForm && (
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200 transition-colors">
                 <div className="flex justify-between items-center mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-white">{editingQuoteId ? 'Editar Cotação' : 'Registrar Nova Cotação'}</h3>
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white">{editingQuoteId ? 'Editar CotaÃ§Ã£o' : 'Registrar Nova CotaÃ§Ã£o'}</h3>
                     <button onClick={() => { setShowForm(false); resetMainForm(); }} className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
                         <X size={20} />
                     </button>
@@ -1179,7 +1184,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                                                 <span className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">BETA</span>
                                             </h4>
                                             <p className="text-sm text-slate-500 dark:text-slate-300 mt-1">
-                                                Faça upload da imagem ou PDF da cotação. Nossa IA identificará os itens, preços e quantidades automaticamente.
+                                                FaÃ§a upload da imagem ou PDF da cotaÃ§Ã£o. Nossa IA identificarÃ¡ os itens, preÃ§os e quantidades automaticamente.
                                             </p>
                                         </>
                                     )}
@@ -1199,7 +1204,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                                             type="button" 
                                             className={`px-5 py-3 bg-white dark:bg-slate-800 border border-blue-200 dark:border-slate-600 text-blue-700 dark:text-blue-300 rounded-xl text-sm font-bold shadow-sm flex items-center gap-2 hover:bg-blue-50 dark:hover:bg-slate-700 transition-all hover:scale-[1.02] active:scale-95`}
                                         >
-                                            <Upload size={18} /> Carregar Cotação
+                                            <Upload size={18} /> Carregar CotaÃ§Ã£o
                                         </button>
                                     </div>
                                 )}
@@ -1221,7 +1226,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                         </div>
                         
                         <div>
-                        <label className={labelClass}>Data Cotação</label>
+                        <label className={labelClass}>Data CotaÃ§Ã£o</label>
                         <div className="relative">
                             <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                             <input type="date" required className={`${inputClass} pl-9`}
@@ -1309,11 +1314,11 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                         </div>
                         
                         <div className="lg:col-span-2">
-                            <label className={labelClass}>Observações</label>
+                            <label className={labelClass}>ObservaÃ§Ãµes</label>
                             <textarea
                                 className={inputClass}
                                 rows={1}
-                                placeholder="Observações adicionais..."
+                                placeholder="ObservaÃ§Ãµes adicionais..."
                                 value={headerData.notes}
                                 onChange={e => setHeaderData({...headerData, notes: e.target.value})}
                             />
@@ -1322,7 +1327,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
 
                     <div className="border-t border-slate-100 dark:border-slate-700 pt-5">
                         <div className="flex justify-between items-center mb-4">
-                            <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Itens da Cotação</h4>
+                            <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Itens da CotaÃ§Ã£o</h4>
                             {!editingQuoteId && (
                                 <button type="button" onClick={addQuoteItem} className="text-xs flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-full font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors">
                                     <Plus size={14} /> Adicionar Item
@@ -1336,7 +1341,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                                     {item.isUnmatched && (
                                         <div className="col-span-12 flex items-center gap-2 text-xs text-red-600 dark:text-red-400 font-bold mb-1">
                                             <AlertTriangle size={14} />
-                                            Material não identificado: "{item.descriptionFallback}". Por favor, selecione um material ou cadastre um novo.
+                                            Material nÃ£o identificado: "{item.descriptionFallback}". Por favor, selecione um material ou cadastre um novo.
                                         </div>
                                     )}
                                     
@@ -1377,7 +1382,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                                     </div>
 
                                     <div className="col-span-6 md:col-span-2">
-                                        <label className={labelClass}>Preço Unit (R$)</label>
+                                        <label className={labelClass}>PreÃ§o Unit (R$)</label>
                                         <input 
                                             type="number" 
                                             step="0.01" 
@@ -1420,7 +1425,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                         <button type="button" onClick={() => { setShowForm(false); resetMainForm(); }} className="px-5 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">Cancelar</button>
                         <button disabled={isLoading} type="submit" className={`px-5 py-2.5 text-sm font-medium text-white rounded-lg shadow-md transition-all disabled:opacity-50 flex items-center gap-2 ${editingQuoteId ? 'bg-amber-600 hover:bg-amber-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
                         {isLoading ? <Loader2 className="animate-spin" size={16} /> : null}
-                        {editingQuoteId ? 'Atualizar Cotação' : 'Salvar Cotações'}
+                        {editingQuoteId ? 'Atualizar CotaÃ§Ã£o' : 'Salvar CotaÃ§Ãµes'}
                         </button>
                     </div>
                 </form>
@@ -1490,7 +1495,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                 <form onSubmit={handleSaveUnit} className="mb-6 border-b border-slate-100 dark:border-slate-700 pb-6">
                     <div className="flex justify-between items-center mb-3">
                         <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">{editingUnitId ? 'Editar Unidade' : 'Adicionar Nova'}</h4>
-                        {editingUnitId && <button type="button" onClick={() => { setEditingUnitId(null); setNewUnit({name: '', symbol: '', conversionFactor: 1}); }} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Cancelar Edição</button>}
+                        {editingUnitId && <button type="button" onClick={() => { setEditingUnitId(null); setNewUnit({name: '', symbol: '', conversionFactor: 1}); }} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Cancelar EdiÃ§Ã£o</button>}
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -1498,11 +1503,11 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                         <input required className={modalInputClass} value={newUnit.name} onChange={e => setNewUnit({...newUnit, name: e.target.value})} placeholder="Pacote" />
                     </div>
                     <div>
-                        <label className={labelClass}>Símbolo</label>
+                        <label className={labelClass}>SÃ­mbolo</label>
                         <input required className={modalInputClass} value={newUnit.symbol} onChange={e => setNewUnit({...newUnit, symbol: e.target.value})} placeholder="pct" />
                     </div>
                     </div>
-                    <label className={labelClass}>Fator Conversão (para Base)</label>
+                    <label className={labelClass}>Fator ConversÃ£o (para Base)</label>
                     <input required type="number" step="0.001" className={modalInputClass} value={newUnit.conversionFactor} onChange={e => setNewUnit({...newUnit, conversionFactor: parseFloat(e.target.value)})} placeholder="Ex: 1" />
                     <button type="submit" className={`w-full text-white py-2 rounded-lg text-sm font-medium ${editingUnitId ? 'bg-amber-600 hover:bg-amber-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
                         {editingUnitId ? 'Atualizar Unidade' : 'Adicionar Unidade'}
@@ -1551,12 +1556,12 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                         <th className="px-6 py-4 whitespace-nowrap">Data</th>
                         <th className="px-6 py-4 whitespace-nowrap">Material</th>
                         <th className="px-6 py-4 whitespace-nowrap">Fornecedor</th>
-                        <th className="px-6 py-4 whitespace-nowrap">Preço Unit.</th>
+                        <th className="px-6 py-4 whitespace-nowrap">PreÃ§o Unit.</th>
                         <th className="px-6 py-4 whitespace-nowrap">Valor Total (IPI)</th>
                         <th className="px-6 py-4 whitespace-nowrap">Frete</th>
                         <th className="px-6 py-4 whitespace-nowrap">Impostos</th>
                         <th className="px-6 py-4 whitespace-nowrap text-center">Anexo</th>
-                        <th className="px-6 py-4 whitespace-nowrap text-right">Ações</th>
+                        <th className="px-6 py-4 whitespace-nowrap text-right">AÃ§Ãµes</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -1647,11 +1652,11 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                                         <span className={`text-xs px-2 py-1 rounded-full border ${quote.status === QuoteStatus.APPROVED ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'}`}>{statusLabels[quote.status]}</span>
                                     )}
                                     
-                                    <button onClick={() => openEditQuote(quote)} className="ml-2 p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors" title="Editar Cotação">
+                                    <button onClick={() => openEditQuote(quote)} className="ml-2 p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors" title="Editar CotaÃ§Ã£o">
                                         <Pencil size={16} />
                                     </button>
 
-                                    <button onClick={(e) => triggerDeleteQuote(quote.id, e)} className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 bg-transparent hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="Excluir Cotação">
+                                    <button onClick={(e) => triggerDeleteQuote(quote.id, e)} className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 bg-transparent hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="Excluir CotaÃ§Ã£o">
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
@@ -1664,7 +1669,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                     
                     {paginatedQuotes.length === 0 && (
                         <div className="p-8 text-center text-slate-400 dark:text-slate-500">
-                            Nenhuma cotação encontrada.
+                            Nenhuma cotaÃ§Ã£o encontrada.
                         </div>
                     )}
                 </div>
@@ -1672,7 +1677,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                 {filteredQuotes.length > 0 && (
                     <div className="flex items-center justify-between p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
                         <div className="text-sm text-slate-500 dark:text-slate-400">
-                            Mostrando <span className="font-medium text-slate-700 dark:text-slate-200">{Math.min(startIndex + 1, filteredQuotes.length)}</span> até <span className="font-medium text-slate-700 dark:text-slate-200">{Math.min(endIndex, filteredQuotes.length)}</span> de <span className="font-medium text-slate-700 dark:text-slate-200">{filteredQuotes.length}</span> resultados
+                            Mostrando <span className="font-medium text-slate-700 dark:text-slate-200">{Math.min(startIndex + 1, filteredQuotes.length)}</span> atÃ© <span className="font-medium text-slate-700 dark:text-slate-200">{Math.min(endIndex, filteredQuotes.length)}</span> de <span className="font-medium text-slate-700 dark:text-slate-200">{filteredQuotes.length}</span> resultados
                         </div>
                         <div className="flex items-center gap-2">
                             <button 
@@ -1683,7 +1688,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                                 <ChevronLeft size={16} />
                             </button>
                             <span className="text-sm font-medium text-slate-600 dark:text-slate-300 px-2">
-                                Página {currentPage} de {totalPages}
+                                PÃ¡gina {currentPage} de {totalPages}
                             </span>
                             <button 
                                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
@@ -1702,7 +1707,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
             {activeTab === 'summary' && (
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
                     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4 gap-4">
-                        <h2 className="text-lg font-bold text-slate-800 dark:text-white shrink-0">Resumo de Preços</h2>
+                        <h2 className="text-lg font-bold text-slate-800 dark:text-white shrink-0">Resumo de PreÃ§os</h2>
                         <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
                             <div className="flex items-center gap-2 w-full sm:w-auto">
                                 <div className="relative flex-1 sm:flex-none">
@@ -1714,7 +1719,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                                         title="Data Inicial"
                                     />
                                 </div>
-                                <span className="text-slate-400">até</span>
+                                <span className="text-slate-400">atÃ©</span>
                                 <div className="relative flex-1 sm:flex-none">
                                     <input 
                                         type="date" 
@@ -1731,8 +1736,8 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                                     value={summaryViewType}
                                     onChange={(e) => setSummaryViewType(e.target.value as 'gross' | 'net')}
                                 >
-                                    <option value="gross">Preço Bruto</option>
-                                    <option value="net">Preço Líquido</option>
+                                    <option value="gross">PreÃ§o Bruto</option>
+                                    <option value="net">PreÃ§o LÃ­quido</option>
                                 </select>
                                 <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                             </div>
@@ -1742,7 +1747,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                                     value={summarySortBy}
                                     onChange={(e) => setSummarySortBy(e.target.value as 'price' | 'material')}
                                 >
-                                    <option value="price">Ordenar: Menor Preço</option>
+                                    <option value="price">Ordenar: Menor PreÃ§o</option>
                                     <option value="material">Ordenar: Material (A-Z)</option>
                                 </select>
                                 <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -1808,7 +1813,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                         </div>
                     </div>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-                        Comparativo de preços por fornecedor. O melhor preço para cada item está destacado em verde.
+                        Comparativo de preÃ§os por fornecedor. O melhor preÃ§o para cada item estÃ¡ destacado em verde.
                     </p>
                     <div ref={tableRef} className="flex flex-col gap-6">
                         {(() => {
@@ -1855,7 +1860,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                                             <tbody>
                                                 <tr>
                                                     <td className="p-8 text-center text-slate-500 dark:text-slate-400">
-                                                        Nenhuma cotação encontrada para os materiais selecionados.
+                                                        Nenhuma cotaÃ§Ã£o encontrada para os materiais selecionados.
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -1998,4 +2003,5 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
         </div>
     );
 };
+
 

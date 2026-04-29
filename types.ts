@@ -43,6 +43,7 @@ export interface Supplier {
   salespersonPhone: string;
   notes?: string;
   companyId?: string;
+  categories?: string[]; // Categories of materials this supplier provides
 }
 
 export interface Material {

@@ -87,7 +87,7 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
   const [categoryFilter, setCategoryFilter] = useState('ALL');
 
   // Supplier Form
-  const [supForm, setSupForm] = useState({ name: '', email: '', rating: 5, salesperson: '', salespersonPhone: '', notes: '' });
+  const [supForm, setSupForm] = useState({ name: '', email: '', rating: 5, salesperson: '', salespersonPhone: '', notes: '', categories: [] as string[] });
   
   // Material Form
   const [matForm, setMatForm] = useState({ name: '', category: '', baseUnitId: '', ipi: 0 });
@@ -122,7 +122,7 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
   }, [optimisticSuppliers, materialSearch]);
 
   const resetForms = () => {
-    setSupForm({ name: '', email: '', rating: 5, salesperson: '', salespersonPhone: '', notes: '' });
+    setSupForm({ name: '', email: '', rating: 5, salesperson: '', salespersonPhone: '', notes: '', categories: [] });
     const firstUnitId = units && units.length > 0 ? units[0].id : '';
     setMatForm({ name: '', category: '', baseUnitId: firstUnitId, ipi: 0 });
     setEditingId(null);
@@ -140,7 +140,8 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
       rating: s.rating, 
       salesperson: s.salesperson || '',
       salespersonPhone: s.salespersonPhone || '',
-      notes: s.notes || ''
+      notes: s.notes || '',
+      categories: s.categories || []
     });
     setEditingId(s.id);
     setActiveTab('suppliers');
@@ -255,7 +256,8 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
              rating: supForm.rating,
              salesperson: supForm.salesperson,
              salespersonPhone: supForm.salespersonPhone,
-             notes: supForm.notes
+             notes: supForm.notes,
+             categories: supForm.categories
            };
            setOptimisticSuppliers(prev => prev.map(s => s.id === editingId ? updatedSup : s));
            showToast('Fornecedor atualizado com sucesso!', 'success');
@@ -270,7 +272,8 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
              rating: supForm.rating,
              salesperson: supForm.salesperson,
              salespersonPhone: supForm.salespersonPhone,
-             notes: supForm.notes
+             notes: supForm.notes,
+             categories: supForm.categories
            };
            setOptimisticSuppliers(prev => [...prev, newSup]);
            showToast('Fornecedor cadastrado com sucesso!', 'success');
@@ -530,6 +533,43 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
                     onChange={e => setSupForm({...supForm, notes: e.target.value})} 
                 />
               </div>
+              {/* Category Multi-Select */}
+              <div>
+                <label className={labelClass}>Categorias Atendidas</label>
+                {uniqueCategories.length === 0 ? (
+                  <p className="text-xs text-slate-400 dark:text-slate-500 italic py-2">
+                    Nenhuma categoria cadastrada. Adicione categorias nos materiais primeiro.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2 p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700/50 min-h-[52px]">
+                    {uniqueCategories.map(cat => {
+                      const isSelected = supForm.categories.includes(cat);
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => {
+                            setSupForm(prev => ({
+                              ...prev,
+                              categories: isSelected
+                                ? prev.categories.filter(c => c !== cat)
+                                : [...prev.categories, cat]
+                            }));
+                          }}
+                          className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
+                            isSelected
+                              ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-500/30'
+                              : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-500 text-slate-600 dark:text-slate-300 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400'
+                          }`}
+                        >
+                          {isSelected ? '✓ ' : ''}{cat}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               <button disabled={isLoading} type="submit" className={`w-full py-2.5 rounded-lg text-sm font-medium shadow-md flex justify-center items-center gap-2 transition-all disabled:opacity-50 ${editingId ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/20' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/20'}`}>
                 {isLoading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />} 
                 {editingId ? 'Atualizar Fornecedor' : 'Salvar Fornecedor'}
@@ -706,6 +746,15 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
                              {s.notes && (
                                  <div className="text-xs font-normal text-slate-500 dark:text-slate-400 mt-1 flex items-start gap-1 bg-slate-100 dark:bg-slate-700/50 p-1 rounded max-w-xs truncate" title={s.notes}>
                                      <FileText size={10} className="mt-0.5 shrink-0" /> {s.notes}
+                                 </div>
+                             )}
+                             {s.categories && s.categories.length > 0 && (
+                                 <div className="flex flex-wrap gap-1 mt-1.5">
+                                     {s.categories.map(cat => (
+                                         <span key={cat} className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50">
+                                             {cat}
+                                         </span>
+                                     ))}
                                  </div>
                              )}
                           </div>

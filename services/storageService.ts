@@ -47,7 +47,8 @@ const mapSupplier = (s: any): Supplier => ({
   salesperson: s.salesperson || '',
   salespersonPhone: s.salesperson_phone || '', 
   notes: s.notes || '',
-  companyId: s.company_id
+  companyId: s.company_id,
+  categories: Array.isArray(s.categories) ? s.categories : []
 });
 
 const mapMaterial = (m: any): Material => ({
@@ -373,7 +374,8 @@ export const StorageService = {
           salesperson: supplier.salesperson,
           salesperson_phone: supplier.salespersonPhone,
           notes: supplier.notes,
-          company_id: companyId
+          company_id: companyId,
+          categories: supplier.categories || []
         }, { onConflict: 'id' })
     );
     
@@ -390,7 +392,8 @@ export const StorageService = {
           contact_email: supplier.contactEmail,
           salesperson: supplier.salesperson,
           salesperson_phone: supplier.salespersonPhone,
-          notes: supplier.notes
+          notes: supplier.notes,
+          categories: supplier.categories || []
         }).eq('id', supplier.id).eq('company_id', companyId)
     );
 

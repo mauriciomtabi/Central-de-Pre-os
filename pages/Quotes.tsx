@@ -249,6 +249,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
 
     const [newSup, setNewSup] = useState({ name: '', email: '', rating: 5, salesperson: '', salespersonPhone: '' });
     const [newMat, setNewMat] = useState({ name: '', category: '', baseUnitId: 'u1', ipi: 0 });
+    const [isCustomCategory, setIsCustomCategory] = useState(false);
     const [newUnit, setNewUnit] = useState({ name: '', symbol: '', conversionFactor: 1 });
     const [headerData, setHeaderData] = useState({
         supplierId: '',
@@ -1447,8 +1448,32 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                 <form onSubmit={handleSaveMaterial}>
                     <label className={labelClass}>Nome</label>
                     <input required className={modalInputClass} value={newMat.name} onChange={e => setNewMat({...newMat, name: e.target.value})} placeholder="Nome do Material" />
-                    <label className={labelClass}>Categoria</label>
-                    <input required className={modalInputClass} value={newMat.category} onChange={e => setNewMat({...newMat, category: e.target.value})} placeholder="Ex: Aço" />
+                                        <div className="flex justify-between items-center mb-1.5">
+                        <label className={labelClass.replace('mb-1.5', '')}>Categoria</label>
+                        <button 
+                            type="button" 
+                            onClick={() => {
+                                setIsCustomCategory(!isCustomCategory);
+                                setNewMat({...newMat, category: ''});
+                            }} 
+                            className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline font-bold bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded"
+                        >
+                            {isCustomCategory ? 'Selecionar Existente' : '+ Nova Categoria'}
+                        </button>
+                    </div>
+                    {isCustomCategory ? (
+                        <input required className={modalInputClass} value={newMat.category} onChange={e => setNewMat({...newMat, category: e.target.value})} placeholder="Digite a nova categoria..." autoFocus />
+                    ) : (
+                        <div className="relative mb-3">
+                             <select required className={`${modalInputClass.replace('mb-3', '')} appearance-none`} value={newMat.category} onChange={e => setNewMat({...newMat, category: e.target.value})}>
+                                <option value="">Selecione...</option>
+                                {categories.map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
+                            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                        </div>
+                    )}
                     <label className={labelClass}>IPI (%)</label>
                     <input type="number" step="0.1" className={modalInputClass} value={newMat.ipi} onChange={e => setNewMat({...newMat, ipi: parseFloat(e.target.value) || 0})} placeholder="0" />
                     <label className={labelClass}>Unidade Controle (Base)</label>
@@ -1973,3 +1998,4 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
         </div>
     );
 };
+

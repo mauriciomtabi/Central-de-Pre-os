@@ -710,7 +710,7 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto max-h-[600px]">
+          <div className="flex-1 overflow-x-auto">
              <table className="w-full text-sm text-left">
                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                  {activeTab === 'suppliers' ? (

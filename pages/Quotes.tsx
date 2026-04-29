@@ -248,7 +248,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
     const aiFileInputRef = useRef<HTMLInputElement>(null);
 
     const [newSup, setNewSup] = useState({ name: '', email: '', rating: 5, salesperson: '', salespersonPhone: '' });
-    const [newMat, setNewMat] = useState({ name: '', category: '', baseUnitId: 'u1', ipi: 0 });
+    const [newMat, setNewMat] = useState({ name: '', category: '', baseUnitId: '', ipi: 0 });
     const [isCustomCategory, setIsCustomCategory] = useState(false);
     const [newUnit, setNewUnit] = useState({ name: '', symbol: '', conversionFactor: 1 });
     const [dbCategories, setDbCategories] = useState<string[]>([]);
@@ -721,7 +721,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
             id: generateUUID(), 
             name: newMat.name, 
             category: newMat.category, 
-            baseUnitId: newMat.baseUnitId,
+            baseUnitId: newMat.baseUnitId || (units.length > 0 ? units[0].id : ''),
             ipi: newMat.ipi
         };
         await StorageService.addMaterial(m);
@@ -737,7 +737,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
         };
         setQuoteItems(updatedItems);
         setActiveModal(null);
-        setNewMat({ name: '', category: '', baseUnitId: 'u1', ipi: 0 });
+        setNewMat({ name: '', category: '', baseUnitId: '', ipi: 0 });
         showToast('Material cadastrado!', 'success');
         } catch (e) {
         showToast('Erro ao cadastrar material.', 'error');

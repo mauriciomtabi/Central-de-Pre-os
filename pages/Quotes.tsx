@@ -462,6 +462,12 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
         const file = e.target.files[0];
+        
+        const isDuplicate = quotes.some(q => q.attachments?.some(att => (att.includes('|') ? att.split('|')[0] : att) === file.name));
+        if (isDuplicate) {
+            showToast('Aviso: Uma cotação com este arquivo já foi anexada.', 'error');
+        }
+
         if (file.size > 2 * 1024 * 1024) {
             showToast('Arquivo muito grande. Limite de 2MB para esta demonstração.', 'error');
             e.target.value = '';
@@ -482,6 +488,11 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             
+            const isDuplicate = quotes.some(q => q.attachments?.some(att => (att.includes('|') ? att.split('|')[0] : att) === file.name));
+            if (isDuplicate) {
+                showToast('Aviso: Uma cotação com este arquivo já foi anexada.', 'error');
+            }
+
             if (!file.type.startsWith('image/') && !file.type.includes('pdf')) {
                 showToast("Por favor, envie uma imagem ou PDF.", "error");
                 return;
@@ -700,6 +711,11 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
 
     const handleSaveMaterial = async (e: React.FormEvent) => {
         e.preventDefault();
+        const existingMat = materials.find(m => m.name.toLowerCase().trim() === newMat.name.toLowerCase().trim());
+        if (existingMat) {
+            showToast('Já existe um material com este nome.', 'error');
+            return;
+        }
         try {
         const m = { 
             id: generateUUID(), 

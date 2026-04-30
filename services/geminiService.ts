@@ -68,7 +68,7 @@ export const generateMarketAnalysis = async (
 
   try {
     const response = await withRetry(() => ai.models.generateContent({
-      model: 'gemini-1.5-flash', // Downgraded to 1.5-flash for better stability during high demand periods
+      model: 'gemini-2.5-flash', // Reverted to 2.5-flash due to 404 on 1.5-flash
       contents: prompt,
     }));
     return response.text || "Nenhuma análise pôde ser gerada.";
@@ -149,7 +149,7 @@ export const extractQuoteData = async (
     const cleanBase64 = base64File.replace(/^data:.+;base64,/, '');
 
     const response = await withRetry(() => ai.models.generateContent({
-      model: 'gemini-1.5-flash', // Use 1.5-flash for extraction as it is extremely stable and fast
+      model: 'gemini-2.5-flash', // Reverted to 2.5-flash due to 404 on 1.5-flash
       contents: [
         {
           role: 'user',

@@ -268,6 +268,11 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
               .then(() => refreshData())
               .catch(() => { showToast('Erro ao atualizar fornecedor no banco.', 'error'); refreshData(); });
         } else {
+           const existingSup = optimisticSuppliers.find(s => s.name.toLowerCase().trim() === supForm.name.toLowerCase().trim());
+           if (existingSup) {
+               showToast('Já existe um fornecedor com este nome.', 'error');
+               return;
+           }
            const newSup: Supplier = {
              id: generateUUID(),
              name: supForm.name,
@@ -316,6 +321,11 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
                 .then(() => refreshData())
                 .catch(() => { showToast('Erro ao atualizar material no banco.', 'error'); refreshData(); });
         } else {
+            const existingMat = optimisticMaterials.find(m => m.name.toLowerCase().trim() === matForm.name.toLowerCase().trim());
+            if (existingMat) {
+                showToast('Já existe um material com este nome.', 'error');
+                return;
+            }
             const newMat: Material = {
                 id: generateUUID(),
                 name: matForm.name,

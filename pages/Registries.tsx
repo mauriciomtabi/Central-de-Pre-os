@@ -10,6 +10,9 @@ interface RegistriesProps {
   materials: Material[];
   units: Unit[];
   refreshData: () => void;
+  onAddMaterial?: (material: Material) => void;
+  onAddSupplier?: (supplier: Supplier) => void;
+  onAddUnit?: (unit: Unit) => void;
 }
 
 // ... (Helper UUID and Icon components same as original)
@@ -45,7 +48,7 @@ const QuickAddModal = ({ title, onClose, children }: { title: string, onClose: (
   </div>
 );
 
-export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, units, refreshData }) => {
+export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, units, refreshData, onAddMaterial, onAddSupplier, onAddUnit }) => {
   const [activeTab, setActiveTab] = useState<'suppliers' | 'materials'>('suppliers');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -278,7 +281,7 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
            setOptimisticSuppliers(prev => [...prev, newSup]);
            showToast('Fornecedor cadastrado com sucesso!', 'success');
            StorageService.addSupplier(newSup)
-              .then(() => refreshData())
+              .then(() => onAddSupplier ? onAddSupplier(newSup) : refreshData())
               .catch((err) => {
                   console.error('[addSupplier] DB error:', err);
                   setOptimisticSuppliers(prev => prev.filter(s => s.id !== newSup.id));
@@ -323,7 +326,7 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
             setOptimisticMaterials(prev => [...prev, newMat]);
             showToast('Material cadastrado com sucesso!', 'success');
             StorageService.addMaterial(newMat)
-                .then(() => refreshData())
+                .then(() => onAddMaterial ? onAddMaterial(newMat) : refreshData())
                 .catch((err) => {
                     console.error('[addMaterial] DB error:', err);
                     // Rollback: remove the optimistic item
@@ -352,7 +355,7 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
             conversionFactor: newUnit.conversionFactor 
         };
         StorageService.addUnit(u)
-            .then(() => refreshData())
+            .then(() => onAddUnit ? onAddUnit(u) : refreshData())
             .catch(() => { showToast('Erro ao adicionar unidade no banco.', 'error'); refreshData(); });
             
         setNewUnit({ name: '', symbol: '', conversionFactor: 1 });

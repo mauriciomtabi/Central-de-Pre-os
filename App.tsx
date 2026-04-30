@@ -392,6 +392,41 @@ const MainApp = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleAddMaterial = (material: Material) => {
+    setData(prev => ({
+      ...prev,
+      materials: [...prev.materials, material].sort((a, b) => a.name.localeCompare(b.name))
+    }));
+  };
+
+  const handleAddSupplier = (supplier: Supplier) => {
+    setData(prev => ({
+      ...prev,
+      suppliers: [...prev.suppliers, supplier].sort((a, b) => a.name.localeCompare(b.name))
+    }));
+  };
+
+  const handleAddUnit = (unit: Unit) => {
+    setData(prev => ({
+      ...prev,
+      units: [...prev.units, unit].sort((a, b) => a.name.localeCompare(b.name))
+    }));
+  };
+
+  const handleAddQuotes = (newQuotes: Quote[]) => {
+    setData(prev => ({
+      ...prev,
+      quotes: [...newQuotes, ...prev.quotes]
+    }));
+  };
+
+  const handleAddQuote = (quote: Quote) => {
+    setData(prev => ({
+      ...prev,
+      quotes: [quote, ...prev.quotes]
+    }));
+  };
+
   const handleNextStep = () => {
     const nextStep = tutorialStep + 1;
     setTutorialStep(nextStep);
@@ -457,6 +492,9 @@ const MainApp = () => {
             materials={data.materials}
             units={data.units}
             refreshData={isTutorialMode ? () => {} : loadData}
+            onAddMaterial={handleAddMaterial}
+            onAddSupplier={handleAddSupplier}
+            onAddUnit={handleAddUnit}
           />
         );
       case 'quotes':
@@ -467,6 +505,10 @@ const MainApp = () => {
             materials={data.materials} 
             units={data.units}
             refreshData={isTutorialMode ? () => {} : loadData}
+            onAddMaterial={handleAddMaterial}
+            onAddSupplier={handleAddSupplier}
+            onAddUnit={handleAddUnit}
+            onAddQuotes={handleAddQuotes}
             isTutorialMode={isTutorialMode}
           />
         );

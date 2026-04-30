@@ -1,6 +1,29 @@
 import { GoogleGenAI } from "@google/genai";
 import { Quote, Material, Supplier } from "../types";
 
+// Helper for exponential backoff retries
+const withRetry = async <T>(fn: () => Promise<T>, maxRetries = 3, initialDelay = 1000): Promise<T> => {
+  let lastError: any;
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      lastError = error;
+      const isRetryable = error?.message?.includes("503") || 
+                          error?.message?.includes("429") || 
+                          error?.message?.includes("UNAVAILABLE") ||
+                          error?.message?.includes("experiencing high demand");
+      
+      if (!isRetryable || i === maxRetries - 1) break;
+      
+      const delay = initialDelay * Math.pow(2, i);
+      console.warn(`Gemini API busy (attempt ${i + 1}/${maxRetries}). Retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  throw lastError;
+};
+
 export const generateMarketAnalysis = async (
   quotes: Quote[],
   material: Material | undefined,
@@ -44,13 +67,16 @@ export const generateMarketAnalysis = async (
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+    const response = await withRetry(() => ai.models.generateContent({
+      model: 'gemini-1.5-flash', // Downgraded to 1.5-flash for better stability during high demand periods
       contents: prompt,
-    });
+    }));
     return response.text || "Nenhuma análise pôde ser gerada.";
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini API Error:", error);
+    if (error?.message?.includes("experiencing high demand") || error?.message?.includes("503")) {
+      return "O serviço de análise está temporariamente sobrecarregado. Por favor, tente novamente em alguns instantes.";
+    }
     return "Falha ao gerar análise. Tente novamente mais tarde.";
   }
 };
@@ -122,8 +148,8 @@ export const extractQuoteData = async (
     // Remove header do base64 se existir para enviar limpo para API
     const cleanBase64 = base64File.replace(/^data:.+;base64,/, '');
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash', // Flash é rápido e bom para extração multimodal
+    const response = await withRetry(() => ai.models.generateContent({
+      model: 'gemini-1.5-flash', // Use 1.5-flash for extraction as it is extremely stable and fast
       contents: [
         {
           role: 'user',
@@ -141,14 +167,17 @@ export const extractQuoteData = async (
       config: {
         responseMimeType: "application/json"
       }
-    });
+    }));
 
     const text = response.text;
     if (!text) return { header: {}, items: [] };
     
     return JSON.parse(text);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini Extraction Error:", error);
+    if (error?.message?.includes("experiencing high demand") || error?.message?.includes("503")) {
+      throw new Error("O serviço de IA está com alta demanda temporária. Por favor, aguarde alguns segundos e tente anexar o arquivo novamente.");
+    }
     throw new Error("Falha ao processar o documento com IA.");
   }
 };

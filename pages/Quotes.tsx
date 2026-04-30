@@ -184,6 +184,10 @@ interface QuotesProps {
   materials: Material[];
   units: Unit[];
   refreshData: () => void;
+  onAddMaterial?: (material: Material) => void;
+  onAddSupplier?: (supplier: Supplier) => void;
+  onAddUnit?: (unit: Unit) => void;
+  onAddQuotes?: (quotes: Quote[]) => void;
   isTutorialMode?: boolean;
 }
 
@@ -197,7 +201,7 @@ const generateUUID = () => {
   });
 };
 
-export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, units, refreshData, isTutorialMode }) => {
+export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, units, refreshData, onAddMaterial, onAddSupplier, onAddUnit, onAddQuotes, isTutorialMode }) => {
     const [activeTab, setActiveTab] = useState<'list' | 'summary'>('list');
     const [showForm, setShowForm] = useState(false);
     const [filterStatus, setFilterStatus] = useState<string>('ALL');
@@ -544,9 +548,9 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                             showToast("A IA não conseguiu identificar itens claros na cotação.", "error");
                         }
 
-                    } catch (error) {
+                    } catch (error: any) {
                         console.error(error);
-                        showToast("Erro ao processar documento com IA.", "error");
+                        showToast(error.message || "Erro ao processar documento com IA.", "error");
                     } finally {
                         setIsProcessingDoc(false);
                     }
@@ -629,6 +633,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
             const combinedAttachment = attachmentData ? `${attachmentName}|${attachmentData}` : attachmentName;
             const attachmentsArray: string[] = combinedAttachment ? [combinedAttachment] : [];
 
+            const newQuotes: Quote[] = [];
             const promises = quoteItems.map(async (item) => {
                 const selectedUnit = units.find(u => u.id === item.unitId);
                 const unitPrice = parseFloat(item.priceUnit);
@@ -662,12 +667,14 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                     await StorageService.updateQuote(quoteData);
                 } else {
                     await StorageService.addQuote(quoteData);
+                    newQuotes.push(quoteData);
                 }
             });
 
             await Promise.all(promises);
             showToast(editingQuoteId ? 'Cotação atualizada!' : `${quoteItems.length} cotação(ões) registrada(s)!`, 'success');
-            await refreshData();
+            if (onAddQuotes && !editingQuoteId) onAddQuotes(newQuotes);
+            else await refreshData();
             setCurrentPage(1);
             setShowForm(false);
             resetMainForm();
@@ -700,7 +707,8 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
             salespersonPhone: newSup.salespersonPhone
         };
         await StorageService.addSupplier(s);
-        await refreshData();
+        if (onAddSupplier) onAddSupplier(s);
+        else refreshData();
         setHeaderData({...headerData, supplierId: s.id});
         setActiveModal(null);
         setNewSup({ name: '', email: '', rating: 5, salesperson: '', salespersonPhone: '' });
@@ -726,7 +734,8 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
             ipi: newMat.ipi
         };
         await StorageService.addMaterial(m);
-        await refreshData();
+        if (onAddMaterial) onAddMaterial(m);
+        else refreshData();
         const itemIndex = pendingMaterialItemTempId 
             ? quoteItems.findIndex(i => i.tempId === pendingMaterialItemTempId)
             : quoteItems.length - 1;

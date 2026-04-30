@@ -237,6 +237,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
     const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
     const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
     const [activeModal, setActiveModal] = useState<'supplier' | 'material' | 'unit' | null>(null);
+    const [pendingMaterialItemTempId, setPendingMaterialItemTempId] = useState<string | null>(null);
     
     // AI Processing State
     const [isProcessingDoc, setIsProcessingDoc] = useState(false);
@@ -726,17 +727,21 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
         };
         await StorageService.addMaterial(m);
         await refreshData();
-        const lastItemIndex = quoteItems.length - 1;
+        const itemIndex = pendingMaterialItemTempId 
+            ? quoteItems.findIndex(i => i.tempId === pendingMaterialItemTempId)
+            : quoteItems.length - 1;
+        const indexToUpdate = itemIndex >= 0 ? itemIndex : quoteItems.length - 1;
         const updatedItems = [...quoteItems];
-        updatedItems[lastItemIndex] = {
-            ...updatedItems[lastItemIndex],
+        updatedItems[indexToUpdate] = {
+            ...updatedItems[indexToUpdate],
             materialId: m.id,
             unitId: m.baseUnitId,
-            ipi: m.ipi?.toString() || updatedItems[lastItemIndex].ipi,
+            ipi: m.ipi?.toString() || updatedItems[indexToUpdate].ipi,
             isUnmatched: false
         };
         setQuoteItems(updatedItems);
         setActiveModal(null);
+        setPendingMaterialItemTempId(null);
         setNewMat({ name: '', category: '', baseUnitId: '', ipi: 0 });
         showToast('Material cadastrado!', 'success');
         } catch (e) {
@@ -1368,7 +1373,10 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                                             options={materials.map(m => ({ id: m.id, name: m.name }))}
                                             value={item.materialId}
                                             onChange={(val) => updateQuoteItem(item.tempId, 'materialId', val)}
-                                            onAddNew={() => setActiveModal('material')}
+                                            onAddNew={() => {
+                                                setPendingMaterialItemTempId(item.tempId);
+                                                setActiveModal('material');
+                                            }}
                                             required
                                             className="w-full"
                                         />

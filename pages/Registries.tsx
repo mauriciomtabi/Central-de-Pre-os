@@ -509,7 +509,7 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Form Column (Left - 4 cols) - Identical to original */}
-        <div className={`lg:col-span-4 ${cardClass} h-fit`}>
+        <div className={`lg:col-span-4 ${cardClass} h-fit lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto custom-scrollbar`}>
           {/* ... (Form Content) */}
           <div className="flex items-center justify-between mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
              <div className="flex items-center gap-2">

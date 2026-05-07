@@ -182,16 +182,16 @@ export const StorageService = {
       const { companyId } = await getContext();
       
       const { data, error } = await supabase
-            .from('quotes')
-            .select('*')
+            .from('quotes').select('*')
             .eq('company_id', companyId)
             .order('date', { ascending: false })
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false }).limit(50);
 
       if (error) throw error;
         
       const dbQuotes = (data || []).map(mapQuote);
-      setLocal(LOCAL_KEYS.QUOTES, dbQuotes);
+      const quotesForStorage = dbQuotes.map(q => ({ ...q, attachments: [] }));
+      setLocal(LOCAL_KEYS.QUOTES, quotesForStorage);
       memoryCache.quotes = dbQuotes;
       return dbQuotes;
     } catch (e: any) {
@@ -271,7 +271,7 @@ export const StorageService = {
             .from('simulations')
             .select('*')
             .eq('company_id', companyId)
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false }).limit(50);
 
       if (error) throw error;
         
@@ -310,7 +310,7 @@ export const StorageService = {
           attachments: quote.attachments,
           notes: quote.notes,
           company_id: companyId 
-        })
+        }), 30000
     );
 
     if (error) throw new Error(error.message);
@@ -338,7 +338,7 @@ export const StorageService = {
           payment_terms: quote.paymentTerms,
           attachments: quote.attachments,
           notes: quote.notes
-        }).eq('id', quote.id).eq('company_id', companyId)
+        }).eq('id', quote.id).eq('company_id', companyId), 30000
     );
 
     if (error) throw new Error(error.message);
@@ -684,3 +684,5 @@ export const StorageService = {
       memoryCache.team = null;
   }
 };
+
+

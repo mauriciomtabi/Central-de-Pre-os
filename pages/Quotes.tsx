@@ -313,7 +313,13 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
         return () => clearInterval(interval);
     }, [isProcessingDoc]);
 
-    const categories = Array.from(new Set([...materials.map(m => m.category).filter(Boolean), ...dbCategories])).sort();
+    const categories = Array.from(new Set([...materials.map(m => m.category).filter(Boolean), ...dbCategories.map(c => c.name)])).sort();
+
+  const getCategoryIpi = (catName: string) => {
+    const fromDb = dbCategories.find(c => c.name === catName);
+    if (fromDb) return fromDb.defaultIpi;
+    return 0;
+  };
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
@@ -887,7 +893,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
             return q.normalizedPricePerBaseUnit;
         };
 
-        const categories = Array.from(new Set(sortedMaterials.map(m => m.category || 'Geral'))).sort();
+        const renderCategories = Array.from(new Set(sortedMaterials.map(m => m.category || 'Geral'))).sort();
 
         let htmlBody = `
             <div style="font-family: Arial, sans-serif; color: #333;">
@@ -898,7 +904,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
             htmlBody += `<p style="margin-bottom: 16px;"><strong>Período:</strong> ${summaryStartDate ? new Date(summaryStartDate).toLocaleDateString('pt-BR') : 'Início'} até ${summaryEndDate ? new Date(summaryEndDate).toLocaleDateString('pt-BR') : 'Hoje'}</p>`;
         }
 
-        categories.forEach(category => {
+        renderCategories.forEach(category => {
             const categoryMaterials = sortedMaterials.filter(m => (m.category || 'Geral') === category);
             if (categoryMaterials.length === 0) return;
 
@@ -1503,7 +1509,10 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                         <input required className={modalInputClass} value={newMat.category} onChange={e => setNewMat({...newMat, category: e.target.value})} placeholder="Digite a nova categoria..." autoFocus />
                     ) : (
                         <div className="relative mb-3">
-                             <select required className={`${modalInputClass.replace('mb-3', '')} appearance-none`} value={newMat.category} onChange={e => setNewMat({...newMat, category: e.target.value})}>
+                             <select required className={`${modalInputClass.replace('mb-3', '')} appearance-none`} value={newMat.category} onChange={e => {
+                                 const newCat = e.target.value;
+                                 setNewMat({...newMat, category: newCat, ipi: getCategoryIpi(newCat)});
+                             }}>
                                 <option value="">Selecione...</option>
                                 {categories.map(cat => (
                                     <option key={cat} value={cat}>{cat}</option>
@@ -1941,11 +1950,11 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                             });
                             const sortedSuppliers = [...activeSuppliers].sort((a, b) => (supplierAvgPrice.get(a.id) || 0) - (supplierAvgPrice.get(b.id) || 0));
 
-                            const categories = Array.from(new Set(sortedMaterials.map(m => m.category || 'Geral'))).sort();
+                            const renderCategories = Array.from(new Set(sortedMaterials.map(m => m.category || 'Geral'))).sort();
 
                             return (
                                 <>
-                                    {categories.map(category => {
+                                    {renderCategories.map(category => {
                                         const categoryMaterials = sortedMaterials.filter(m => (m.category || 'Geral') === category);
                                         if (categoryMaterials.length === 0) return null;
 

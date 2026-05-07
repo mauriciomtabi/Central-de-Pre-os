@@ -456,10 +456,25 @@ export const StorageService = {
     );
     if (matError) throw new Error(matError.message);
 
-    await withTimeout(
-        supabase.from('categories').update({ name: newCategory.name, default_ipi: newCategory.defaultIpi })
-            .eq('name', oldCategory).eq('company_id', companyId)
-    );
+    const { data: existingCat } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('name', oldCategory)
+        .eq('company_id', companyId)
+        .single();
+
+    if (existingCat) {
+        const { error: catError } = await supabase
+            .from('categories')
+            .update({ name: newCategory.name, default_ipi: newCategory.defaultIpi })
+            .eq('id', existingCat.id);
+        if (catError) throw new Error(catError.message);
+    } else {
+        const { error: catError } = await supabase
+            .from('categories')
+            .insert({ name: newCategory.name, default_ipi: newCategory.defaultIpi, company_id: companyId });
+        if (catError) throw new Error(catError.message);
+    }
 
     memoryCache.materials = null;
     memoryCache.categories = null;

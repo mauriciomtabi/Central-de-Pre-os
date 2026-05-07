@@ -182,10 +182,10 @@ export const StorageService = {
       const { companyId } = await getContext();
       
       const { data, error } = await supabase
-            .from('quotes').select('*')
+            .from('quotes').select('id, supplier_id, material_id, date, quantity, unit_id, price_unit, price_total, normalized_price_per_base_unit, freight, delivery_days, icms, ipi, status, payment_terms, notes, company_id')
             .eq('company_id', companyId)
             .order('date', { ascending: false })
-            .order('created_at', { ascending: false }).limit(50);
+            .order('created_at', { ascending: false });
 
       if (error) throw error;
         
@@ -271,7 +271,7 @@ export const StorageService = {
             .from('simulations')
             .select('*')
             .eq('company_id', companyId)
-            .order('created_at', { ascending: false }).limit(50);
+            .order('created_at', { ascending: false });
 
       if (error) throw error;
         
@@ -684,5 +684,6 @@ export const StorageService = {
       memoryCache.team = null;
   }
 };
+
 
 

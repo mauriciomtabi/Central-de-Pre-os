@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Supplier, Material, Unit } from '../types';
+import { Supplier, Material, Unit, Category } from '../types';
 import { StorageService } from '../services/storageService';
 import { Plus, Building2, Package, Save, CheckCircle2, Pencil, X, Loader2, Trash2, Search, Filter, ChevronDown, List, User, Phone, Share2, FileText } from 'lucide-react';
 import { Toast, ToastMessage } from '../components/Toast';
@@ -60,7 +60,7 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
 
   React.useEffect(() => { setOptimisticSuppliers(suppliers); }, [suppliers]);
   React.useEffect(() => { setOptimisticMaterials(materials); }, [materials]);
-  const [dbCategories, setDbCategories] = React.useState<string[]>([]);
+  const [dbCategories, setDbCategories] = React.useState<Category[]>([]);
   React.useEffect(() => {
     StorageService.getCategories().then(cats => setDbCategories(cats)).catch(() => {});
   }, []);
@@ -82,8 +82,9 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editedCategoryName, setEditedCategoryName] = useState('');
-  const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const [customCategories, setCustomCategories] = useState<Category[]>([]);
   const [newCategoryInput, setNewCategoryInput] = useState('');
+  const [newCategoryIpi, setNewCategoryIpi] = useState(0);
 
   // Filters State
   const [materialSearch, setMaterialSearch] = useState('');
@@ -108,9 +109,19 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
   // ... (Computed Values: uniqueCategories, filteredMaterials, filteredSuppliers - same as original)
   const uniqueCategories = useMemo(() => {
     const baseCats = optimisticMaterials.map(m => m.category).filter(Boolean);
-    const allCategories = [...baseCats, ...customCategories, ...dbCategories];
+    const customCats = customCategories.map(c => c.name);
+    const dbCats = dbCategories.map(c => c.name);
+    const allCategories = [...baseCats, ...customCats, ...dbCats];
     return Array.from(new Set(allCategories)).sort();
   }, [optimisticMaterials, customCategories, dbCategories]);
+
+  const getCategoryIpi = (catName: string) => {
+    const fromDb = dbCategories.find(c => c.name === catName);
+    if (fromDb) return fromDb.defaultIpi;
+    const fromCustom = customCategories.find(c => c.name === catName);
+    if (fromCustom) return fromCustom.defaultIpi;
+    return 0;
+  };
 
   const filteredMaterials = useMemo(() => {
     return optimisticMaterials.filter(m => {
@@ -383,32 +394,39 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
         if (uniqueCategories.includes(trimmed)) showToast('Categoria já existe!', 'error');
         return;
     }
+    const newCatObj: Category = { name: trimmed, defaultIpi: newCategoryIpi };
     // Optimistic UI update
-    setCustomCategories(prev => [...prev, trimmed]);
-    setDbCategories(prev => [...prev, trimmed]);
+    setCustomCategories(prev => [...prev, newCatObj]);
+    setDbCategories(prev => [...prev, newCatObj]);
     setNewCategoryInput('');
+    setNewCategoryIpi(0);
     showToast('Categoria adicionada!', 'success');
     // Persist to DB
-    StorageService.addCategory(trimmed)
+    StorageService.addCategory(newCatObj)
         .catch(() => {
             // Rollback on failure
-            setCustomCategories(prev => prev.filter(c => c !== trimmed));
-            setDbCategories(prev => prev.filter(c => c !== trimmed));
+            setCustomCategories(prev => prev.filter(c => c.name !== trimmed));
+            setDbCategories(prev => prev.filter(c => c.name !== trimmed));
             showToast('Erro ao salvar categoria no banco. Tente novamente.', 'error');
         });
   };
 
+  const [editedCategoryIpi, setEditedCategoryIpi] = useState(0);
+  
   const handleUpdateCategory = async (oldCategory: string) => {
     const trimmedNewCat = editedCategoryName.trim();
-    if (!trimmedNewCat || trimmedNewCat === oldCategory) {
+    if (!trimmedNewCat) {
         setEditingCategory(null);
         return;
     }
     
     try {
-        setOptimisticMaterials(prev => prev.map(m => m.category === oldCategory ? { ...m, category: trimmedNewCat } : m));
+        if (trimmedNewCat !== oldCategory) {
+            setOptimisticMaterials(prev => prev.map(m => m.category === oldCategory ? { ...m, category: trimmedNewCat } : m));
+        }
         
-        StorageService.updateCategory(oldCategory, trimmedNewCat)
+        const updatedCatObj: Category = { name: trimmedNewCat, defaultIpi: editedCategoryIpi };
+        StorageService.updateCategory(oldCategory, updatedCatObj)
             .then(() => refreshData())
             .catch(() => { showToast('Erro ao atualizar categoria no banco.', 'error'); refreshData(); });
             
@@ -417,7 +435,7 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
         
         // Update form if it was using the old category
         if (matForm.category === oldCategory) {
-            setMatForm(prev => ({ ...prev, category: trimmedNewCat }));
+            setMatForm(prev => ({ ...prev, category: trimmedNewCat, ipi: editedCategoryIpi }));
         }
         if (categoryFilter === oldCategory) {
             setCategoryFilter(trimmedNewCat);
@@ -636,7 +654,10 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
                             required 
                             className={`${inputClass} appearance-none`} 
                             value={matForm.category} 
-                            onChange={e => setMatForm({...matForm, category: e.target.value})}
+                            onChange={e => {
+                                const newCat = e.target.value;
+                                setMatForm({...matForm, category: newCat, ipi: getCategoryIpi(newCat)});
+                            }}
                         >
                             <option value="">Selecione...</option>
                             {uniqueCategories.map(cat => (
@@ -867,19 +888,34 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
               </button>
             </div>
             <div className="p-4 max-h-[60vh] overflow-y-auto">
-              <div className="flex gap-2 mb-4">
-                  <input 
-                      type="text" 
-                      placeholder="Nova categoria..."
-                      value={newCategoryInput}
-                      onChange={(e) => setNewCategoryInput(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddCustomCategory()}
-                      className="flex-1 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-400 dark:placeholder-slate-500"
-                  />
+              <div className="flex gap-2 mb-4 items-end">
+                  <div className="flex-1">
+                      <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1 tracking-wide">Nome da Categoria</label>
+                      <input 
+                          type="text" 
+                          placeholder="Ex: Aço Carbono"
+                          value={newCategoryInput}
+                          onChange={(e) => setNewCategoryInput(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddCustomCategory()}
+                          className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-400 dark:placeholder-slate-500"
+                      />
+                  </div>
+                  <div className="w-24">
+                      <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1 tracking-wide">IPI (%)</label>
+                      <input 
+                          type="number" 
+                          placeholder="0"
+                          step="0.1"
+                          value={newCategoryIpi}
+                          onChange={(e) => setNewCategoryIpi(parseFloat(e.target.value) || 0)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddCustomCategory()}
+                          className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-400 dark:placeholder-slate-500"
+                      />
+                  </div>
                   <button 
                       onClick={handleAddCustomCategory}
                       disabled={!newCategoryInput.trim()}
-                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:text-slate-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:text-slate-500 text-white px-4 py-2 h-[38px] rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                   >
                       <Plus size={16} /> Adicionar
                   </button>
@@ -900,6 +936,14 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
                                           className="flex-1 border border-blue-300 dark:border-blue-600 rounded px-2 py-1 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
                                           autoFocus
                                       />
+                                      <input 
+                                          type="number"
+                                          step="0.1"
+                                          value={editedCategoryIpi}
+                                          onChange={(e) => setEditedCategoryIpi(parseFloat(e.target.value) || 0)}
+                                          className="w-16 border border-blue-300 dark:border-blue-600 rounded px-2 py-1 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                                          title="IPI (%)"
+                                      />
                                       <button 
                                           onClick={() => handleUpdateCategory(category)}
                                           disabled={isLoading}
@@ -919,12 +963,13 @@ export const Registries: React.FC<RegistriesProps> = ({ suppliers, materials, un
                                   </div>
                               ) : (
                                   <>
-                                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{category}</span>
+                                      <div className="flex flex-col"><span className="text-sm font-medium text-slate-700 dark:text-slate-300">{category}</span><span className="text-[10px] text-slate-500">IPI Padrão: {getCategoryIpi(category)}%</span></div>
                                       <div className="flex items-center gap-1">
                                           <button 
                                               onClick={() => {
                                                   setEditingCategory(category);
                                                   setEditedCategoryName(category);
+                                                  setEditedCategoryIpi(getCategoryIpi(category));
                                               }}
                                               className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
                                               title="Editar"

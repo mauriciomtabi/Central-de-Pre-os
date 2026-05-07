@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Quote, Supplier, Material, Unit, QuoteStatus, FreightType } from '../types';
+import { Quote, Supplier, Material, Unit, QuoteStatus, FreightType, Category } from '../types';
 import { StorageService } from '../services/storageService';
 import { extractQuoteData } from '../services/geminiService';
 import { Plus, Filter, Search, X, Calendar, Trash2, Pencil, Loader2, Upload, Paperclip, Check, FileText, ChevronDown, Tags, ChevronLeft, ChevronRight, HelpCircle, Eye, ZoomIn, ZoomOut, RotateCcw, Download, Sparkles, AlertTriangle, ScanLine, BrainCircuit, Share2 } from 'lucide-react';
@@ -256,7 +256,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
     const [newMat, setNewMat] = useState({ name: '', category: '', baseUnitId: '', ipi: 0 });
     const [isCustomCategory, setIsCustomCategory] = useState(false);
     const [newUnit, setNewUnit] = useState({ name: '', symbol: '', conversionFactor: 1 });
-    const [dbCategories, setDbCategories] = useState<string[]>([]);
+    const [dbCategories, setDbCategories] = useState<Category[]>([]);
 
     useEffect(() => {
         StorageService.getCategories().then(cats => setDbCategories(cats)).catch(() => {});

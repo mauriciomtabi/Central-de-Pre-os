@@ -1,4 +1,4 @@
-import { Quote, Supplier, Material, Unit, QuoteStatus, SimulationScenario } from "../types";
+import { Quote, Supplier, Material, Unit, QuoteStatus, SimulationScenario, Category } from "../types";
 import { supabase } from "../lib/supabase";
 
 const ERROR_NO_COMPANY = "Usuário não possui empresa vinculada. Acesse 'Minha Equipe' para configurar.";
@@ -158,7 +158,7 @@ let memoryCache = {
     units: null as Unit[] | null,
     simulations: null as SimulationScenario[] | null,
     team: null as any[] | null,
-    categories: null as string[] | null,
+    categories: null as Category[] | null,
 };
 
 export const clearStorageCache = () => {
@@ -447,17 +447,17 @@ export const StorageService = {
     memoryCache.materials = null;
   },
 
-  updateCategory: async (oldCategory: string, newCategory: string) => {
+  updateCategory: async (oldCategory: string, newCategory: Category) => {
     const { companyId } = await getContext();
     const { error: matError } = await withTimeout(
         supabase.from('materials').update({
-          category: newCategory
+          category: newCategory.name
         }).eq('category', oldCategory).eq('company_id', companyId)
     );
     if (matError) throw new Error(matError.message);
 
     await withTimeout(
-        supabase.from('categories').update({ name: newCategory })
+        supabase.from('categories').update({ name: newCategory.name, default_ipi: newCategory.defaultIpi })
             .eq('name', oldCategory).eq('company_id', companyId)
     );
 
@@ -483,17 +483,22 @@ export const StorageService = {
     memoryCache.categories = null;
   },
 
-  getCategories: async (forceRefresh = false): Promise<string[]> => {
+  getCategories: async (forceRefresh = false): Promise<Category[]> => {
     if (!forceRefresh && memoryCache.categories) return memoryCache.categories;
     try {
       const { companyId } = await getContext();
       const { data, error } = await supabase
           .from('categories')
-          .select('name')
+          .select('id, name, default_ipi')
           .eq('company_id', companyId)
           .order('name', { ascending: true });
       if (error) throw error;
-      const cats = (data || []).map((r: any) => r.name as string);
+      const cats: Category[] = (data || []).map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        defaultIpi: Number(r.default_ipi) || 0,
+        companyId: companyId
+      }));
       memoryCache.categories = cats;
       return cats;
     } catch (e: any) {
@@ -502,11 +507,12 @@ export const StorageService = {
     }
   },
 
-  addCategory: async (categoryName: string) => {
+  addCategory: async (category: Category) => {
     const { companyId } = await getContext();
     const { error } = await withTimeout(
         supabase.from('categories').upsert({
-          name: categoryName,
+          name: category.name,
+          default_ipi: category.defaultIpi,
           company_id: companyId
         }, { onConflict: 'name,company_id' })
     );

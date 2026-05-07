@@ -99,3 +99,9 @@ export interface SimulationScenario {
   createdAt: string;
   companyId?: string;
 }
+export interface Category {
+  id?: string;
+  name: string;
+  defaultIpi?: number;
+  companyId?: string;
+}

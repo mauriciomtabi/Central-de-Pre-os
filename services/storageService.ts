@@ -287,6 +287,25 @@ export const StorageService = {
 
   // --- WRITES (Strict DB Only - Protected by Timeout) ---
 
+    getQuoteAttachment: async (quoteId: string): Promise<string | null> => {
+    try {
+      const { companyId } = await getContext();
+      const { data, error } = await supabase
+        .from('quotes')
+        .select('attachments')
+        .eq('id', quoteId)
+        .eq('company_id', companyId)
+        .single();
+      if (error) return null;
+      if (data?.attachments && data.attachments.length > 0) {
+        return data.attachments[0];
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  },
+
   addQuote: async (quote: Quote) => {
     const { companyId } = await getContext();
 
@@ -684,6 +703,7 @@ export const StorageService = {
       memoryCache.team = null;
   }
 };
+
 
 
 

@@ -526,6 +526,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                             if (extractedData.header) {
                                 setHeaderData(prev => ({
                                     ...prev,
+                                    date: extractedData.header.date || prev.date,
                                     supplierId: extractedData.header.supplierId || prev.supplierId,
                                     deliveryDays: extractedData.header.deliveryDays || prev.deliveryDays,
                                     paymentTerms: extractedData.header.paymentTerms || prev.paymentTerms,

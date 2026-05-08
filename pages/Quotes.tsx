@@ -276,6 +276,22 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
     const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
     const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
     const [activeModal, setActiveModal] = useState<'supplier' | 'material' | 'unit' | null>(null);
+    const isRealTimeDuplicate = useMemo(() => {
+        if (editingQuoteId) return false;
+        if (!headerData.supplierId || !headerData.date || quoteItems.length === 0) return false;
+        
+        return quoteItems.some(item => {
+            if (!item.materialId || !item.priceUnit || !item.quantity) return false;
+            return quotes.some(q => 
+                q.supplierId === headerData.supplierId &&
+                q.date === headerData.date &&
+                q.materialId === item.materialId &&
+                q.priceUnit === parseFloat(item.priceUnit) &&
+                q.quantity === parseFloat(item.quantity)
+            );
+        });
+    }, [headerData, quoteItems, quotes, editingQuoteId]);
+
     const [pendingMaterialItemTempId, setPendingMaterialItemTempId] = useState<string | null>(null);
     
     // AI Processing State
@@ -1234,6 +1250,17 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                 </div>
                 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {isRealTimeDuplicate && (
+                        <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 rounded-lg p-4 mb-6 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <AlertTriangle className="text-amber-500 shrink-0 mt-0.5" size={20} />
+                            <div>
+                                <h4 className="font-medium text-amber-800 dark:text-amber-300">Atenção: Cotação já registrada</h4>
+                                <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+                                    Identificamos itens nesta cotação que já foram registrados exatamente com os mesmos valores (Data, Fornecedor, Preço e Quantidade). Se você clicar em salvar, o sistema solicitará confirmação.
+                                </p>
+                            </div>
+                        </div>
+                    )}
                     {!editingQuoteId && (
                         <div className={`mb-6 relative overflow-hidden rounded-xl transition-all duration-700 ${isProcessingDoc ? 'bg-slate-900 border border-blue-500/50 shadow-[0_0_30px_-5px_rgba(59,130,246,0.3)] p-8' : 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-700/50 dark:to-slate-700/30 p-4 border border-blue-100 dark:border-slate-600'}`}>
                             

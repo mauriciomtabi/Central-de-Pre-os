@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+ï»¿import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Quote, Supplier, Material, Unit, QuoteStatus, FreightType, Category } from '../types';
 import { StorageService } from '../services/storageService';
 import { extractQuoteData } from '../services/geminiService';
@@ -114,7 +114,7 @@ const AttachmentModal = ({ fileName, onClose, isTutorialMode }: { fileName: stri
                     ) : (
                         <div className="text-center text-slate-500 dark:text-slate-400">
                             <FileText size={48} className="mx-auto mb-2 opacity-50" />
-                            <p>Visualização não disponível para este arquivo.</p>
+                            <p>Visualizaï¿½ï¿½o nï¿½o disponï¿½vel para este arquivo.</p>
                         </div>
                     )}
                 </div>
@@ -1693,7 +1693,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                                           if (att) {
                                               handleOpenAttachment(att);
                                           } else {
-                                              showToast('Esta cotação não possui anexo.', 'info');
+                                              showToast('Esta cotaï¿½ï¿½o nï¿½o possui anexo.', 'info');
                                           }
                                       }} 
                                       className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors p-1"
@@ -2076,6 +2076,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
         </div>
     );
 };
+
 
 
 

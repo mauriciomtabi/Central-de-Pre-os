@@ -321,8 +321,8 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                 q.supplierId === headerData.supplierId &&
                 q.date === headerData.date &&
                 q.materialId === item.materialId &&
-                q.priceUnit === parseFloat(item.priceUnit) &&
-                q.quantity === parseFloat(item.quantity)
+                q.priceUnit === parseFloat(item.priceUnit.toString().replace(",", ".")) &&
+                q.quantity === parseFloat(item.quantity.toString().replace(",", "."))
             );
         });
     }, [headerData, quoteItems, quotes, editingQuoteId]);
@@ -680,8 +680,8 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async (e?: React.FormEvent, forceSubmit = false) => {
+        if (e) e.preventDefault();
         const hasUnmatched = quoteItems.some(i => i.isUnmatched);
         if (hasUnmatched) {
             showToast('Existem itens não cadastrados (em vermelho). Cadastre-os ou selecione um material existente.', 'error');
@@ -695,8 +695,8 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                     q.supplierId === headerData.supplierId &&
                     q.date === headerData.date &&
                     q.materialId === item.materialId &&
-                    q.priceUnit === parseFloat(item.priceUnit) &&
-                    q.quantity === parseFloat(item.quantity)
+                    q.priceUnit === parseFloat(item.priceUnit.toString().replace(",", ".")) &&
+                    q.quantity === parseFloat(item.quantity.toString().replace(",", "."))
                 );
             });
 
@@ -720,9 +720,9 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
             const newQuotes: Quote[] = [];
             const promises = quoteItems.map(async (item) => {
                 const selectedUnit = units.find(u => u.id === item.unitId);
-                const unitPrice = parseFloat(item.priceUnit);
+                const unitPrice = parseFloat(item.priceUnit.toString().replace(",", "."));
                 const normalizedPrice = selectedUnit ? unitPrice / selectedUnit.conversionFactor : 0;
-                const quantity = parseFloat(item.quantity);
+                const quantity = parseFloat(item.quantity.toString().replace(",", "."));
 
                 if (!item.materialId || !item.quantity || !item.priceUnit) return;
 

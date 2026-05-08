@@ -38,18 +38,49 @@ const QuickAddModal = ({ title, onClose, children }: { title: string, onClose: (
 );
 
 const AttachmentModal = ({ fileName, onClose, isTutorialMode }: { fileName: string, onClose: () => void, isTutorialMode?: boolean }) => {
-    // Handle "Name|Base64" format or just Name
-    let displayUrl = '';
+    const [blobUrl, setBlobUrl] = React.useState<string>('');
+    const [isImage, setIsImage] = React.useState(false);
+    const [isLoading, setIsLoading] = React.useState(true);
+
     let displayName = fileName;
+    let dataUrl = '';
 
     if (fileName.includes('|')) {
         const parts = fileName.split('|');
         displayName = parts[0];
-        displayUrl = parts[1];
+        dataUrl = parts[1];
+    } else {
+        displayName = fileName;
     }
 
-    const isImage = displayName.match(/\.(jpeg|jpg|gif|png)$/i) != null || displayUrl.startsWith('data:image');
-    
+    React.useEffect(() => {
+        if (!dataUrl) {
+            setIsLoading(false);
+            return;
+        }
+
+        const imgCheck = displayName.match(/\.(jpeg|jpg|gif|png)$/i) != null || dataUrl.startsWith('data:image');
+        setIsImage(imgCheck);
+
+        if (dataUrl.startsWith('data:')) {
+            // Convert massive base64 string to a Blob URL so the browser renders it without freezing or blanking out
+            fetch(dataUrl)
+                .then(res => res.blob())
+                .then(blob => {
+                    setBlobUrl(URL.createObjectURL(blob));
+                    setIsLoading(false);
+                })
+                .catch((e) => {
+                    console.error("Failed to convert data URL to Blob", e);
+                    setBlobUrl(dataUrl);
+                    setIsLoading(false);
+                });
+        } else {
+            setBlobUrl(dataUrl);
+            setIsLoading(false);
+        }
+    }, [dataUrl, displayName]);
+
     return (
         <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
@@ -58,8 +89,8 @@ const AttachmentModal = ({ fileName, onClose, isTutorialMode }: { fileName: stri
                         <Paperclip size={18} /> {displayName}
                     </h3>
                     <div className="flex gap-2">
-                        {displayUrl && (
-                             <a href={displayUrl} download={displayName} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400 transition-colors" title="Baixar">
+                        {dataUrl && (
+                             <a href={dataUrl} download={displayName} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400 transition-colors" title="Baixar">
                                  <Download size={20} />
                              </a>
                         )}
@@ -68,18 +99,22 @@ const AttachmentModal = ({ fileName, onClose, isTutorialMode }: { fileName: stri
                         </button>
                     </div>
                 </div>
-                <div className="flex-1 overflow-auto bg-slate-100 dark:bg-slate-900 p-4 flex items-center justify-center">
-                    {displayUrl ? (
+                <div className="flex-1 overflow-auto bg-slate-100 dark:bg-slate-900 p-4 flex items-center justify-center min-h-[500px]">
+                    {isLoading ? (
+                        <div className="flex flex-col items-center gap-4 text-slate-500">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                            <p>Carregando anexo...</p>
+                        </div>
+                    ) : blobUrl ? (
                          isImage ? (
-                             <img src={displayUrl} alt="Anexo" className="max-w-full max-h-full object-contain shadow-lg" />
+                             <img src={blobUrl} alt="Anexo" className="max-w-full max-h-[80vh] object-contain shadow-lg rounded-md" />
                          ) : (
-                             <iframe src={displayUrl} className="w-full h-full min-h-[500px] border-none shadow-lg bg-white" title="Documento"></iframe>
+                             <iframe src={blobUrl} className="w-full h-full min-h-[500px] border-none shadow-lg bg-white rounded-md" title="Documento"></iframe>
                          )
                     ) : (
                         <div className="text-center text-slate-500 dark:text-slate-400">
                             <FileText size={48} className="mx-auto mb-2 opacity-50" />
-                            <p>Visualiza√ß√£o n√£o dispon√≠vel para este arquivo simulado.</p>
-                            <p className="text-xs mt-1">(Apenas arquivos reais carregados agora s√£o exibidos)</p>
+                            <p>VisualizaÁ„o n„o disponÌvel para este arquivo.</p>
                         </div>
                     )}
                 </div>
@@ -2041,5 +2076,6 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
         </div>
     );
 };
+
 
 

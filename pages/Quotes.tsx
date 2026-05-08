@@ -670,6 +670,30 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
             return;
         }
 
+        if (!editingQuoteId && !forceSubmit) {
+            const isDuplicate = quoteItems.some(item => {
+                if (!item.materialId || !item.priceUnit || !item.quantity) return false;
+                return quotes.some(q => 
+                    q.supplierId === headerData.supplierId &&
+                    q.date === headerData.date &&
+                    q.materialId === item.materialId &&
+                    q.priceUnit === parseFloat(item.priceUnit) &&
+                    q.quantity === parseFloat(item.quantity)
+                );
+            });
+
+            if (isDuplicate) {
+                setConfirmationState({
+                    isOpen: true,
+                    type: 'DUPLICATE_QUOTE',
+                    id: 'duplicate_check',
+                    title: 'Atenção: Possível Cotação Duplicada',
+                    message: 'Identificamos itens nesta cotação que já foram registrados exatamente com os mesmos valores (Data, Fornecedor, Preço e Quantidade). Deseja prosseguir e registrar novamente?'
+                });
+                return;
+            }
+        }
+
         setIsLoading(true);
         try {
             const combinedAttachment = attachmentData ? `${attachmentName}|${attachmentData}` : attachmentName;
@@ -2076,6 +2100,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
         </div>
     );
 };
+
 
 
 

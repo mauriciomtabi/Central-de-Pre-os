@@ -181,3 +181,4 @@ export const extractQuoteData = async (
     throw new Error("Falha ao processar o documento com IA.");
   }
 };
+

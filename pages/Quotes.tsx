@@ -276,21 +276,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
     const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
     const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
     const [activeModal, setActiveModal] = useState<'supplier' | 'material' | 'unit' | null>(null);
-    const isRealTimeDuplicate = useMemo(() => {
-        if (editingQuoteId) return false;
-        if (!headerData.supplierId || !headerData.date || quoteItems.length === 0) return false;
-        
-        return quoteItems.some(item => {
-            if (!item.materialId || !item.priceUnit || !item.quantity) return false;
-            return quotes.some(q => 
-                q.supplierId === headerData.supplierId &&
-                q.date === headerData.date &&
-                q.materialId === item.materialId &&
-                q.priceUnit === parseFloat(item.priceUnit) &&
-                q.quantity === parseFloat(item.quantity)
-            );
-        });
-    }, [headerData, quoteItems, quotes, editingQuoteId]);
+    
 
     const [pendingMaterialItemTempId, setPendingMaterialItemTempId] = useState<string | null>(null);
     
@@ -324,6 +310,22 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
     const [quoteItems, setQuoteItems] = useState<QuoteItemRow[]>([
         { tempId: '1', materialId: '', quantity: '', unitId: '', priceUnit: '', ipi: '' }
     ]);
+
+    const isRealTimeDuplicate = useMemo(() => {
+        if (editingQuoteId) return false;
+        if (!headerData?.supplierId || !headerData?.date || !quoteItems?.length) return false;
+        
+        return quoteItems?.some(item => {
+            if (!item.materialId || !item.priceUnit || !item.quantity) return false;
+            return quotes?.some(q => 
+                q.supplierId === headerData.supplierId &&
+                q.date === headerData.date &&
+                q.materialId === item.materialId &&
+                q.priceUnit === parseFloat(item.priceUnit) &&
+                q.quantity === parseFloat(item.quantity)
+            );
+        });
+    }, [headerData, quoteItems, quotes, editingQuoteId]);
 
     const [confirmationState, setConfirmationState] = useState<{
         isOpen: boolean;

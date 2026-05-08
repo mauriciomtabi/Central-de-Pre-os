@@ -1651,27 +1651,22 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
                                 {quote.ipi > 0 && <div className="font-bold text-slate-700 dark:text-slate-300">IPI: {quote.ipi}%</div>}
                                 {!quote.icms && !quote.ipi && '-'}
                             </td>
-                            <td className="px-6 py-4 text-center">
-                                {hasAttachment ? (
-                                    <div className="flex justify-center gap-1">
-                                        {quote.attachments?.map((file, idx) => {
-                                            const fileNameDisplay = file.split('|')[0];
-                                            return (
-                                                <button 
-                                                key={idx}
-                                                onClick={() => handleOpenAttachment(file)} 
-                                                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors p-1"
-                                                title={`Abrir anexo: ${fileNameDisplay}`}
-                                                >
-                                                    <Eye size={18} />
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    <span className="text-slate-300 dark:text-slate-600">-</span>
-                                )}
-                            </td>
+                                                          <td className="px-6 py-4 text-center">
+                                  <button 
+                                      onClick={async () => {
+                                          const att = await StorageService.getQuoteAttachment(quote.id);
+                                          if (att) {
+                                              handleOpenAttachment(att);
+                                          } else {
+                                              showToast('Esta cotação não possui anexo.', 'info');
+                                          }
+                                      }} 
+                                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors p-1"
+                                      title="Ver anexo (se existir)"
+                                  >
+                                      <Eye size={18} />
+                                  </button>
+                              </td>
                             <td className="px-6 py-4 text-right">
                                 <div className="flex items-center justify-end gap-2">
                                     {quote.status === QuoteStatus.OPEN ? (
@@ -2046,4 +2041,5 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
         </div>
     );
 };
+
 

@@ -311,7 +311,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
 
     const [confirmationState, setConfirmationState] = useState<{
         isOpen: boolean;
-        type: 'DELETE_QUOTE' | 'DELETE_UNIT' | null;
+        type: 'DELETE_QUOTE' | 'DELETE_UNIT' | 'DUPLICATE_QUOTE' | null;
         id: string | null;
         title: string;
         message: string;
@@ -2076,6 +2076,7 @@ export const Quotes: React.FC<QuotesProps> = ({ quotes, suppliers, materials, un
         </div>
     );
 };
+
 
 
 

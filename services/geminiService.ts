@@ -112,8 +112,8 @@ export const extractQuoteData = async (
     1. Tente encontrar o fornecedor correspondente na lista acima (fuzzy match pelo nome ou CNPJ). Retorne o 'supplierId' ou null.
     2. Extraia o prazo de entrega em dias (apenas o número, ex: 15).
     3. Extraia a condição de pagamento (texto curto, ex: "30/60 dias").
-    4. Extraia o ICMS em porcentagem (apenas o número, ex: 18).
-    5. Extraia o tipo de frete ("CIF" ou "FOB").
+    5. Extraia o ICMS em porcentagem (apenas o número, ex: 18).
+    6. Extraia o tipo de frete ("CIF" ou "FOB").
 
     Para cada item encontrado na imagem:
     1. Tente encontrar o material correspondente na lista acima (fuzzy match pelo nome).
@@ -127,6 +127,7 @@ export const extractQuoteData = async (
     {
       "header": {
         "supplierId": "string ou null",
+        "date": "string no formato YYYY-MM-DD ou null",
         "deliveryDays": "string (ex: '15') ou null",
         "paymentTerms": "string ou null",
         "icms": "string (ex: '18') ou null",
@@ -181,6 +182,7 @@ export const extractQuoteData = async (
     throw new Error("Falha ao processar o documento com IA.");
   }
 };
+
 
 
 
